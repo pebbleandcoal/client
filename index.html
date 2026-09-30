@@ -350,7 +350,7 @@
     <div style="display:flex; flex-direction:column; gap:6px;">
       <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Client Passcode (Leave blank for NO password):</label>
       <input type="text" id="adminClientPassSetting" placeholder="e.g. client2026 (blank = public access)">
-      <span style="font-size:0.75rem; color:var(--muted);">When empty, clients can open the page immediately without entering a password.</span>
+      <span style="font-size:0.75rem; color:var(--muted);">When empty, clients can open this folder directly without entering a password.</span>
     </div>
 
     <!-- Bulk Dropbox Links -->
@@ -401,15 +401,21 @@
 
 <script>
   // ==========================================================
-  // 1. HARDCODED MASTER ADMIN PASSWORD
+  // 1. HARDCODED MASTER ADMIN PASSWORD & PATH-SCOPING HELPER
   // ==========================================================
   const MASTER_ADMIN_PASSWORD = "admin777";
 
+  // Normalize path to isolate different folders/repositories on the same domain
+  const PATH_KEY = window.location.pathname.replace(/index\.html$/i, '');
+  function getScopedKey(name) {
+    return `${name}_${PATH_KEY}`;
+  }
+
   // ==========================================================
-  // 2. CLIENT AUTH LOGIC
+  // 2. CLIENT AUTH LOGIC (PATH-ISOLATED)
   // ==========================================================
   function getClientPassword() {
-    return localStorage.getItem('qc_client_password') || '';
+    return localStorage.getItem(getScopedKey('qc_client_password')) || '';
   }
 
   const authOverlay = document.getElementById('authOverlay');
@@ -427,7 +433,7 @@
       return;
     }
 
-    if (sessionStorage.getItem('qc_authorized') === 'true') {
+    if (sessionStorage.getItem(getScopedKey('qc_authorized')) === 'true') {
       authOverlay.style.display = 'none';
       mainContainer.style.display = 'flex';
       initPlayer();
@@ -441,7 +447,7 @@
   function verifyClientPasscode() {
     const requiredPass = getClientPassword();
     if (passInput.value.trim() === requiredPass) {
-      sessionStorage.setItem('qc_authorized', 'true');
+      sessionStorage.setItem(getScopedKey('qc_authorized'), 'true');
       authOverlay.style.display = 'none';
       mainContainer.style.display = 'flex';
       initPlayer();
@@ -458,7 +464,7 @@
   });
 
   // ==========================================================
-  // 3. DROPBOX LINK TRANSLATOR & PARSER
+  // 3. DROPBOX LINK TRANSLATOR & PATH-ISOLATED TRACK CONFIG
   // ==========================================================
   const DEFAULT_TRACKS = [
     { 
@@ -476,7 +482,7 @@
   let TRACKS = loadSavedTracks();
 
   function loadSavedTracks() {
-    const saved = localStorage.getItem('qc_custom_tracks');
+    const saved = localStorage.getItem(getScopedKey('qc_custom_tracks'));
     if (saved) {
       try { return JSON.parse(saved); } catch(e) {}
     }
@@ -512,7 +518,6 @@
     return clean;
   }
 
-  // Helper to extract a clean filename from a URL
   function extractFilenameFromUrl(url) {
     try {
       const parsed = new URL(url.startsWith('http') ? url : 'https://' + url);
@@ -526,7 +531,7 @@
   }
 
   // ==========================================================
-  // 4. SECRET ADMIN MODAL LOGIC
+  // 4. SECRET ADMIN MODAL LOGIC (Gear / Double Click / Hotkey / ?admin)
   // ==========================================================
   const adminAuthModal = document.getElementById('adminAuthModal');
   const adminPassInput = document.getElementById('adminPassInput');
@@ -601,7 +606,6 @@
 
   function openAdminPanel() {
     adminClientPassSetting.value = getClientPassword();
-    // Present as simple links if standard, or delimited if customized
     adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
     adminModal.style.display = 'flex';
   }
@@ -613,12 +617,12 @@
   btnCloseAdmin.addEventListener('click', closeAdminPanel);
 
   btnSaveAdminSettings.addEventListener('click', () => {
-    // 1. Save or clear client password
+    // 1. Save or clear client password for this specific path
     const newClientPass = adminClientPassSetting.value.trim();
     if (newClientPass) {
-      localStorage.setItem('qc_client_password', newClientPass);
+      localStorage.setItem(getScopedKey('qc_client_password'), newClientPass);
     } else {
-      localStorage.removeItem('qc_client_password');
+      localStorage.removeItem(getScopedKey('qc_client_password'));
     }
 
     // 2. Parse lines (supports bare Dropbox URLs OR Title | URL | VTT)
@@ -633,13 +637,10 @@
         const vtt = parts[2] || `${title}.vtt`;
         newTracks.push({ title, audio, vtt });
       } else {
-        // Bare Dropbox URL
         const audio = line;
         const filename = extractFilenameFromUrl(audio);
         const baseName = filename.replace(/\.(mp3|wav|m4a|aac|ogg|flac)$/i, '');
-        // Clean Title: "Chapter-1" -> "Chapter 1"
         const title = baseName ? baseName.replace(/[-_]/g, ' ') : `Track ${index + 1}`;
-        // Auto-assign matching VTT
         const vtt = `${baseName || title}.vtt`;
         newTracks.push({ title, audio, vtt });
       }
@@ -647,20 +648,20 @@
 
     if (newTracks.length > 0) {
       TRACKS = newTracks;
-      localStorage.setItem('qc_custom_tracks', JSON.stringify(TRACKS));
+      localStorage.setItem(getScopedKey('qc_custom_tracks'), JSON.stringify(TRACKS));
     }
 
     closeAdminPanel();
-    alert(`Saved ${newTracks.length} tracks successfully!`);
+    alert(`Saved ${newTracks.length} tracks successfully for this path!`);
     checkClientAccess();
     renderTrackGrid();
     loadTrack(0);
   });
 
   btnResetDefault.addEventListener('click', () => {
-    if (confirm('Reset to default chapters and remove client passcode?')) {
-      localStorage.removeItem('qc_custom_tracks');
-      localStorage.removeItem('qc_client_password');
+    if (confirm('Reset to default chapters and remove client passcode for this path?')) {
+      localStorage.removeItem(getScopedKey('qc_custom_tracks'));
+      localStorage.removeItem(getScopedKey('qc_client_password'));
       TRACKS = DEFAULT_TRACKS;
       closeAdminPanel();
       checkClientAccess();
@@ -711,24 +712,20 @@
     currentActiveId = null;
     statusMessage.textContent = `Streaming "${track.title}" from Dropbox...`;
 
-    // Try primary VTT filename, fallback to space-separated or hyphenated variant if needed
     let vttCandidates = [
       track.vtt,
       track.vtt.replace(/[-_]/g, ' '),
       track.vtt.replace(/\s+/g, '-')
     ];
-    // deduplicate
     vttCandidates = [...new Set(vttCandidates)];
 
     let loadedVttText = null;
-    let foundVttName = '';
 
     for (const cand of vttCandidates) {
       try {
         const res = await fetch(cand);
         if (res.ok) {
           loadedVttText = await res.text();
-          foundVttName = cand;
           break;
         }
       } catch(e) {}
@@ -741,7 +738,7 @@
       statusMessage.textContent = `Ready: "${track.title}". Click any line to listen, or flag issues.`;
     } else {
       statusMessage.textContent = `Playing "${track.title}", but transcript could not be loaded.`;
-      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not find "${track.vtt}". Make sure it is uploaded in your Netlify folder.</p>`;
+      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not find "${track.vtt}". Make sure it is in your project directory.</p>`;
       exportControls.style.display = 'none';
     }
   }
@@ -928,6 +925,7 @@
     URL.revokeObjectURL(url);
   });
 
+  // Verify access upon landing
   checkClientAccess();
 </script>
 
