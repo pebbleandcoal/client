@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Review & QC Player</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card: #1e293b;
+      --border: #334155;
+      --accent: #38bdf8;
+      --danger: #f43f5e;
+      --success: #10b981;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 920px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+    h2 { 
+      margin: 0; 
+      cursor: pointer; 
+      user-select: none;
+    }
+    #btnAdminTrigger {
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 1.15rem;
+      color: var(--muted);
+      opacity: 0.5;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+    #btnAdminTrigger:hover {
+      opacity: 1;
+      border-color: var(--border);
+      background: var(--card);
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* Track Selector */
+    .track-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .track-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .track-grid {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .track-pill {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .track-pill:hover { background: #1e293b; border-color: #64748b; }
+    .track-pill.active {
+      background: var(--accent);
+      color: #0b1120;
+      font-weight: 700;
+      border-color: var(--accent);
+    }
+
+    audio { width: 100%; }
+
+    #statusMessage {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-family: monospace;
+      padding: 8px 12px;
+      background: #060b13;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    /* Transcript Viewer */
+    #transcript {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      height: 480px;
+      max-height: 480px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+    .segment {
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid #334155;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+    .segment:hover { border-color: #64748b; }
+    .segment.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .segment.flagged {
+      border-left: 4px solid var(--danger);
+      background: rgba(244, 63, 94, 0.08);
+    }
+    .seg-main {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      cursor: pointer;
+    }
+    .time-badge {
+      font-family: monospace;
+      color: var(--accent);
+      font-size: 0.85rem;
+      white-space: nowrap;
+      user-select: none;
+      padding-top: 2px;
+    }
+    .text-body { flex: 1; line-height: 1.6; }
+
+    .flag-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .flag-btn.is-flagged {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+    }
+    .comment-drawer {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .comment-drawer.open { display: flex; }
+    .comment-drawer select, .comment-drawer textarea {
+      background: #090d16;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.85rem;
+    }
+    .comment-drawer textarea { resize: vertical; min-height: 48px; }
+
+    /* Export Action Bar */
+    .export-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+    .btn-export {
+      background: #059669;
+      color: #fff;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .btn-export:hover { background: #047857; }
+    .flag-counter {
+      margin-left: auto;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--danger);
+    }
+
+    /* Modals & Overlays */
+    .overlay-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 17, 32, 0.95);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .modal-box {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      padding: 24px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .modal-box.admin-mode {
+      max-width: 680px;
+    }
+    .modal-box h3 { margin: 0; font-size: 1.2rem; color: #fff; }
+    .modal-box p { margin: 0; font-size: 0.85rem; color: var(--muted); }
+    .modal-box input, .modal-box textarea {
+      background: #090d16;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+      font-family: inherit;
+    }
+    .modal-box textarea {
+      font-family: monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      resize: vertical;
+      min-height: 200px;
+      white-space: pre;
+    }
+    .modal-box input:focus, .modal-box textarea:focus { border-color: var(--accent); }
+    .btn-primary {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .btn-secondary:hover { color: #fff; border-color: #64748b; }
+    .modal-error {
+      color: var(--danger);
+      font-size: 0.8rem;
+      display: none;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Client Passcode Modal -->
+<div id="authOverlay" class="overlay-backdrop" style="display:none;">
+  <div class="modal-box" style="text-align: center;">
+    <div style="font-size: 2rem;">🔒</div>
+    <h3>Protected Review</h3>
+    <p>Please enter the client passcode to access this review session.</p>
+    <input type="password" id="passInput" placeholder="Enter Passcode" autofocus>
+    <button class="btn-primary" id="btnUnlock">Unlock Player</button>
+    <div id="authError" class="modal-error">Incorrect passcode. Please try again.</div>
+  </div>
+</div>
+
+<!-- Admin Login Verification Modal -->
+<div id="adminAuthModal" class="overlay-backdrop" style="display:none;">
+  <div class="modal-box" style="text-align: center;">
+    <div style="font-size: 2rem;">🛡️</div>
+    <h3>Admin Verification</h3>
+    <p>Enter the master admin password to configure this portal.</p>
+    <input type="password" id="adminPassInput" placeholder="Master Password" autofocus>
+    <button class="btn-primary" id="btnAdminVerify">Access Admin Panel</button>
+    <div id="adminAuthError" class="modal-error">Incorrect master password.</div>
+    <button class="btn-secondary" id="btnCancelAdminAuth" style="margin-top:4px;">Cancel</button>
+  </div>
+</div>
+
+<!-- Secret Admin Configuration Modal -->
+<div id="adminModal" class="overlay-backdrop" style="display:none;">
+  <div class="modal-box admin-mode">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Portal Settings</h3>
+      <button class="btn-secondary" id="btnCloseAdmin" style="padding:4px 8px;">✕</button>
+    </div>
+
+    <!-- Client Passcode Setting -->
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Client Passcode (Leave blank for NO password):</label>
+      <input type="text" id="adminClientPassSetting" placeholder="e.g. client2026 (blank = public access)">
+      <span style="font-size:0.75rem; color:var(--muted);">When empty, clients can open the page immediately without entering a password.</span>
+    </div>
+
+    <!-- Bulk Dropbox Links -->
+    <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+      <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Dropbox Tracks & Transcripts:</label>
+      <p style="margin:0;">Paste your Dropbox links directly (one per line). Titles and VTT filenames are detected automatically:</p>
+      <textarea id="adminTrackInput" spellcheck="false" placeholder="https://www.dropbox.com/scl/fi/hd5rtkbnsv8zqpghybm1v/Chapter-1.mp3?rlkey=pej9w8uhcq3sn1blke08omsyh&st=rcw47ge5&dl=0&#10;https://www.dropbox.com/scl/fi/lf2grph87sg6nzu4gmxxc/Chapter-2.mp3?rlkey=2b7vpuh779mvckns2gxzz23dy&st=pb7p805x&dl=0"></textarea>
+    </div>
+
+    <div style="display:flex; gap:10px; justify-content: flex-end; margin-top:8px;">
+      <button class="btn-secondary" id="btnResetDefault">Reset to Defaults</button>
+      <button class="btn-primary" id="btnSaveAdminSettings">Save & Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main QC App Container -->
+<div class="container" id="mainContainer">
+  <div class="header-row">
+    <h2 id="appTitle" title="Double click or click the gear for settings">Audio Review & QC Player</h2>
+    <button id="btnAdminTrigger" title="Admin Settings">⚙️</button>
+  </div>
+
+  <div class="panel">
+    <div class="track-section">
+      <div class="row" style="justify-content: space-between;">
+        <span class="track-label">Select Chapter / Track:</span>
+        <label style="font-size: 0.85rem; user-select: none;">
+          <input type="checkbox" id="autoscrollToggle" checked> Auto-Scroll
+        </label>
+      </div>
+      <div class="track-grid" id="trackGrid"></div>
+    </div>
+
+    <audio id="audioPlayer" controls></audio>
+    <div id="statusMessage">Loading audio...</div>
+
+    <div class="export-bar" id="exportControls" style="display:none;">
+      <button class="btn-export" id="btnExportTxt">Export Notes (.txt)</button>
+      <span class="flag-counter" id="flagCounter">0 Errors Flagged</span>
+    </div>
+  </div>
+
+  <div id="transcript">
+    <p style="color: var(--muted); text-align: center;">Transcript will load here once audio is ready.</p>
+  </div>
+</div>
+
+<script>
+  // ==========================================================
+  // 1. HARDCODED MASTER ADMIN PASSWORD
+  // ==========================================================
+  const MASTER_ADMIN_PASSWORD = "admin777";
+
+  // ==========================================================
+  // 2. CLIENT AUTH LOGIC
+  // ==========================================================
+  function getClientPassword() {
+    return localStorage.getItem('qc_client_password') || '';
+  }
+
+  const authOverlay = document.getElementById('authOverlay');
+  const mainContainer = document.getElementById('mainContainer');
+  const passInput = document.getElementById('passInput');
+  const btnUnlock = document.getElementById('btnUnlock');
+  const authError = document.getElementById('authError');
+
+  function checkClientAccess() {
+    const requiredPass = getClientPassword();
+    if (!requiredPass) {
+      authOverlay.style.display = 'none';
+      mainContainer.style.display = 'flex';
+      initPlayer();
+      return;
+    }
+
+    if (sessionStorage.getItem('qc_authorized') === 'true') {
+      authOverlay.style.display = 'none';
+      mainContainer.style.display = 'flex';
+      initPlayer();
+      return;
+    }
+
+    authOverlay.style.display = 'flex';
+    mainContainer.style.display = 'none';
+  }
+
+  function verifyClientPasscode() {
+    const requiredPass = getClientPassword();
+    if (passInput.value.trim() === requiredPass) {
+      sessionStorage.setItem('qc_authorized', 'true');
+      authOverlay.style.display = 'none';
+      mainContainer.style.display = 'flex';
+      initPlayer();
+    } else {
+      authError.style.display = 'block';
+      passInput.value = '';
+      passInput.focus();
+    }
+  }
+
+  btnUnlock.addEventListener('click', verifyClientPasscode);
+  passInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') verifyClientPasscode();
+  });
+
+  // ==========================================================
+  // 3. DROPBOX LINK TRANSLATOR & PARSER
+  // ==========================================================
+  const DEFAULT_TRACKS = [
+    { 
+      title: "Chapter 1", 
+      audio: "https://www.dropbox.com/scl/fi/hd5rtkbnsv8zqpghybm1v/Chapter-1.mp3?rlkey=pej9w8uhcq3sn1blke08omsyh&st=rcw47ge5&dl=0", 
+      vtt: "Chapter 1.vtt" 
+    },
+    { 
+      title: "Chapter 2", 
+      audio: "https://www.dropbox.com/scl/fi/lf2grph87sg6nzu4gmxxc/Chapter-2.mp3?rlkey=2b7vpuh779mvckns2gxzz23dy&st=pb7p805x&dl=0", 
+      vtt: "Chapter 2.vtt" 
+    }
+  ];
+
+  let TRACKS = loadSavedTracks();
+
+  function loadSavedTracks() {
+    const saved = localStorage.getItem('qc_custom_tracks');
+    if (saved) {
+      try { return JSON.parse(saved); } catch(e) {}
+    }
+    return DEFAULT_TRACKS;
+  }
+
+  // Translates ANY raw Dropbox link into a direct streaming URL
+  function getDirectAudioUrl(url) {
+    if (!url) return '';
+    let clean = url.trim();
+
+    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+      clean = 'https://' + clean;
+    }
+
+    try {
+      const parsed = new URL(clean);
+      if (parsed.hostname.includes('dropbox.com')) {
+        parsed.hostname = 'dl.dropboxusercontent.com';
+        parsed.searchParams.delete('dl');
+        parsed.searchParams.set('raw', '1');
+        return parsed.toString();
+      }
+    } catch (e) {
+      clean = clean.replace('www.dropbox.com', 'dl.dropboxusercontent.com')
+                   .replace('//dropbox.com', '//dl.dropboxusercontent.com');
+      clean = clean.replace(/([?&])dl=[01]/, '$1raw=1');
+      if (!clean.includes('raw=1')) {
+        clean += (clean.includes('?') ? '&' : '?') + 'raw=1';
+      }
+      return clean;
+    }
+    return clean;
+  }
+
+  // Helper to extract a clean filename from a URL
+  function extractFilenameFromUrl(url) {
+    try {
+      const parsed = new URL(url.startsWith('http') ? url : 'https://' + url);
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      const last = segments[segments.length - 1] || '';
+      return decodeURIComponent(last);
+    } catch(e) {
+      const match = url.match(/\/([^\/?#]+)[?#]?/);
+      return match ? decodeURIComponent(match[1]) : '';
+    }
+  }
+
+  // ==========================================================
+  // 4. SECRET ADMIN MODAL LOGIC
+  // ==========================================================
+  const adminAuthModal = document.getElementById('adminAuthModal');
+  const adminPassInput = document.getElementById('adminPassInput');
+  const btnAdminVerify = document.getElementById('btnAdminVerify');
+  const adminAuthError = document.getElementById('adminAuthError');
+  const btnCancelAdminAuth = document.getElementById('btnCancelAdminAuth');
+
+  const adminModal = document.getElementById('adminModal');
+  const btnCloseAdmin = document.getElementById('btnCloseAdmin');
+  const adminClientPassSetting = document.getElementById('adminClientPassSetting');
+  const adminTrackInput = document.getElementById('adminTrackInput');
+  const btnSaveAdminSettings = document.getElementById('btnSaveAdminSettings');
+  const btnResetDefault = document.getElementById('btnResetDefault');
+  const appTitle = document.getElementById('appTitle');
+  const btnAdminTrigger = document.getElementById('btnAdminTrigger');
+
+  function openAdminChallenge() {
+    adminAuthError.style.display = 'none';
+    adminPassInput.value = '';
+    adminAuthModal.style.display = 'flex';
+    adminPassInput.focus();
+  }
+
+  function verifyAdminLogin() {
+    if (adminPassInput.value.trim() === MASTER_ADMIN_PASSWORD) {
+      adminAuthModal.style.display = 'none';
+      openAdminPanel();
+    } else {
+      adminAuthError.style.display = 'block';
+      adminPassInput.value = '';
+      adminPassInput.focus();
+    }
+  }
+
+  btnAdminVerify.addEventListener('click', verifyAdminLogin);
+  adminPassInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') verifyAdminLogin();
+  });
+  btnCancelAdminAuth.addEventListener('click', () => {
+    adminAuthModal.style.display = 'none';
+  });
+
+  btnAdminTrigger.addEventListener('click', (e) => {
+    e.preventDefault();
+    openAdminChallenge();
+  });
+
+  let titleClicks = 0;
+  let clickTimer = null;
+  appTitle.addEventListener('click', (e) => {
+    e.preventDefault();
+    titleClicks++;
+    clearTimeout(clickTimer);
+    if (titleClicks >= 2) {
+      titleClicks = 0;
+      openAdminChallenge();
+    } else {
+      clickTimer = setTimeout(() => { titleClicks = 0; }, 400);
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+      e.preventDefault();
+      openAdminChallenge();
+    }
+  });
+
+  if (window.location.search.includes('admin')) {
+    setTimeout(openAdminChallenge, 150);
+  }
+
+  function openAdminPanel() {
+    adminClientPassSetting.value = getClientPassword();
+    // Present as simple links if standard, or delimited if customized
+    adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
+    adminModal.style.display = 'flex';
+  }
+
+  function closeAdminPanel() {
+    adminModal.style.display = 'none';
+  }
+
+  btnCloseAdmin.addEventListener('click', closeAdminPanel);
+
+  btnSaveAdminSettings.addEventListener('click', () => {
+    // 1. Save or clear client password
+    const newClientPass = adminClientPassSetting.value.trim();
+    if (newClientPass) {
+      localStorage.setItem('qc_client_password', newClientPass);
+    } else {
+      localStorage.removeItem('qc_client_password');
+    }
+
+    // 2. Parse lines (supports bare Dropbox URLs OR Title | URL | VTT)
+    const rawLines = adminTrackInput.value.trim().split('\n').map(l => l.trim()).filter(Boolean);
+    const newTracks = [];
+
+    rawLines.forEach((line, index) => {
+      if (line.includes('|')) {
+        const parts = line.split('|').map(s => s.trim());
+        const title = parts[0] || `Track ${index + 1}`;
+        const audio = parts[1];
+        const vtt = parts[2] || `${title}.vtt`;
+        newTracks.push({ title, audio, vtt });
+      } else {
+        // Bare Dropbox URL
+        const audio = line;
+        const filename = extractFilenameFromUrl(audio);
+        const baseName = filename.replace(/\.(mp3|wav|m4a|aac|ogg|flac)$/i, '');
+        // Clean Title: "Chapter-1" -> "Chapter 1"
+        const title = baseName ? baseName.replace(/[-_]/g, ' ') : `Track ${index + 1}`;
+        // Auto-assign matching VTT
+        const vtt = `${baseName || title}.vtt`;
+        newTracks.push({ title, audio, vtt });
+      }
+    });
+
+    if (newTracks.length > 0) {
+      TRACKS = newTracks;
+      localStorage.setItem('qc_custom_tracks', JSON.stringify(TRACKS));
+    }
+
+    closeAdminPanel();
+    alert(`Saved ${newTracks.length} tracks successfully!`);
+    checkClientAccess();
+    renderTrackGrid();
+    loadTrack(0);
+  });
+
+  btnResetDefault.addEventListener('click', () => {
+    if (confirm('Reset to default chapters and remove client passcode?')) {
+      localStorage.removeItem('qc_custom_tracks');
+      localStorage.removeItem('qc_client_password');
+      TRACKS = DEFAULT_TRACKS;
+      closeAdminPanel();
+      checkClientAccess();
+      renderTrackGrid();
+      loadTrack(0);
+    }
+  });
+
+  // ==========================================================
+  // 5. QC PLAYER ENGINE
+  // ==========================================================
+  const trackGrid = document.getElementById('trackGrid');
+  const audioPlayer = document.getElementById('audioPlayer');
+  const transcriptDiv = document.getElementById('transcript');
+  const statusMessage = document.getElementById('statusMessage');
+  const exportControls = document.getElementById('exportControls');
+  const flagCounter = document.getElementById('flagCounter');
+  const autoscrollToggle = document.getElementById('autoscrollToggle');
+
+  let activeIndex = -1;
+  let segments = [];
+  let currentActiveId = null;
+
+  function initPlayer() {
+    renderTrackGrid();
+    loadTrack(0);
+  }
+
+  function renderTrackGrid() {
+    trackGrid.innerHTML = '';
+    TRACKS.forEach((track, idx) => {
+      const btn = document.createElement('div');
+      btn.className = `track-pill ${idx === activeIndex ? 'active' : ''}`;
+      btn.textContent = track.title;
+      btn.addEventListener('click', () => {
+        if (activeIndex !== idx) loadTrack(idx);
+      });
+      trackGrid.appendChild(btn);
+    });
+  }
+
+  async function loadTrack(idx) {
+    activeIndex = idx;
+    const track = TRACKS[idx];
+    document.querySelectorAll('.track-pill').forEach((b, i) => b.classList.toggle('active', i === idx));
+
+    audioPlayer.src = getDirectAudioUrl(track.audio);
+    currentActiveId = null;
+    statusMessage.textContent = `Streaming "${track.title}" from Dropbox...`;
+
+    // Try primary VTT filename, fallback to space-separated or hyphenated variant if needed
+    let vttCandidates = [
+      track.vtt,
+      track.vtt.replace(/[-_]/g, ' '),
+      track.vtt.replace(/\s+/g, '-')
+    ];
+    // deduplicate
+    vttCandidates = [...new Set(vttCandidates)];
+
+    let loadedVttText = null;
+    let foundVttName = '';
+
+    for (const cand of vttCandidates) {
+      try {
+        const res = await fetch(cand);
+        if (res.ok) {
+          loadedVttText = await res.text();
+          foundVttName = cand;
+          break;
+        }
+      } catch(e) {}
+    }
+
+    if (loadedVttText) {
+      parseVTT(loadedVttText);
+      renderTranscript();
+      exportControls.style.display = 'flex';
+      statusMessage.textContent = `Ready: "${track.title}". Click any line to listen, or flag issues.`;
+    } else {
+      statusMessage.textContent = `Playing "${track.title}", but transcript could not be loaded.`;
+      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not find "${track.vtt}". Make sure it is uploaded in your Netlify folder.</p>`;
+      exportControls.style.display = 'none';
+    }
+  }
+
+  function parseVTT(text) {
+    const lines = text.replace(/\r/g, '').split('\n');
+    segments = [];
+    const timeRegex = /((\d{2}:)?\d{2}:\d{2}\.\d{3})\s*-->\s*((\d{2}:)?\d{2}:\d{2}\.\d{3})/;
+
+    let curStart = null, curEnd = null, curText = [];
+
+    lines.forEach(line => {
+      const match = line.match(timeRegex);
+      if (match) {
+        if (curStart !== null && curText.length > 0) {
+          segments.push({
+            id: segments.length + 1,
+            start: curStart,
+            end: curEnd,
+            text: curText.join(' ').trim(),
+            flagged: false,
+            errorType: 'Mispronunciation',
+            note: ''
+          });
+          curText = [];
+        }
+        curStart = parseSeconds(match[1]);
+        curEnd = parseSeconds(match[3]);
+      } else if (curStart !== null) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('NOTE') && !trimmed.match(/^\d+$/)) {
+          curText.push(trimmed);
+        }
+      }
+    });
+
+    if (curStart !== null && curText.length > 0) {
+      segments.push({
+        id: segments.length + 1,
+        start: curStart,
+        end: curEnd,
+        text: curText.join(' ').trim(),
+        flagged: false,
+        errorType: 'Mispronunciation',
+        note: ''
+      });
+    }
+  }
+
+  function parseSeconds(str) {
+    const parts = str.split(':');
+    if (parts.length === 3) return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+    return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+  }
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+
+  function renderTranscript() {
+    transcriptDiv.innerHTML = '';
+    currentActiveId = null;
+
+    segments.forEach((seg, idx) => {
+      const card = document.createElement('div');
+      card.className = `segment ${seg.flagged ? 'flagged' : ''}`;
+      card.id = `seg-${idx}`;
+      card.dataset.start = seg.start;
+      card.dataset.end = seg.end;
+
+      card.innerHTML = `
+        <div class="seg-main" title="Click to listen">
+          <span class="time-badge">[${formatTime(seg.start)}]</span>
+          <span class="text-body">${seg.text}</span>
+          <div class="seg-actions" onclick="event.stopPropagation()">
+            <button class="flag-btn ${seg.flagged ? 'is-flagged' : ''}" data-idx="${idx}">
+              ⚑ ${seg.flagged ? 'Flagged' : 'Flag Issue'}
+            </button>
+          </div>
+        </div>
+
+        <div class="comment-drawer ${seg.flagged ? 'open' : ''}" id="drawer-${idx}">
+          <div class="row">
+            <label style="font-size: 0.8rem; color: var(--muted);">Issue Type:</label>
+            <select class="error-type" data-idx="${idx}">
+              <option value="Mispronunciation" ${seg.errorType === 'Mispronunciation' ? 'selected' : ''}>Mispronunciation</option>
+              <option value="Unnatural Pause / Cadence" ${seg.errorType === 'Unnatural Pause / Cadence' ? 'selected' : ''}>Unnatural Pause / Cadence</option>
+              <option value="Audio Artifact / Noise" ${seg.errorType === 'Audio Artifact / Noise' ? 'selected' : ''}>Audio Artifact / Noise</option>
+              <option value="Wrong Emotion / Tone" ${seg.errorType === 'Wrong Emotion / Tone' ? 'selected' : ''}>Wrong Emotion / Tone</option>
+              <option value="Dropped / Skipped Word" ${seg.errorType === 'Dropped / Skipped Word' ? 'selected' : ''}>Dropped / Skipped Word</option>
+              <option value="Other" ${seg.errorType === 'Other' ? 'selected' : ''}>Other</option>
+            </select>
+          </div>
+          <textarea placeholder="Describe the change needed or notes for retake..." data-idx="${idx}">${seg.note}</textarea>
+        </div>
+      `;
+
+      card.querySelector('.seg-main').addEventListener('click', () => {
+        audioPlayer.currentTime = seg.start;
+        audioPlayer.play();
+      });
+
+      const flagBtn = card.querySelector('.flag-btn');
+      flagBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        seg.flagged = !seg.flagged;
+        card.classList.toggle('flagged', seg.flagged);
+        flagBtn.classList.toggle('is-flagged', seg.flagged);
+        flagBtn.innerHTML = `⚑ ${seg.flagged ? 'Flagged' : 'Flag Issue'}`;
+        card.querySelector('.comment-drawer').classList.toggle('open', seg.flagged);
+        updateCounter();
+      });
+
+      card.querySelector('.error-type').addEventListener('change', (e) => { seg.errorType = e.target.value; });
+      card.querySelector('textarea').addEventListener('input', (e) => { seg.note = e.target.value; });
+
+      transcriptDiv.appendChild(card);
+    });
+
+    updateCounter();
+  }
+
+  function updateCounter() {
+    const count = segments.filter(s => s.flagged).length;
+    flagCounter.textContent = `${count} ${count === 1 ? 'Issue' : 'Issues'} Flagged`;
+  }
+
+  // Auto-scroll
+  audioPlayer.addEventListener('timeupdate', () => {
+    const cur = audioPlayer.currentTime;
+    const segmentElements = document.querySelectorAll('.segment');
+    let activeElem = null;
+
+    for (let i = 0; i < segmentElements.length; i++) {
+      const elem = segmentElements[i];
+      const start = parseFloat(elem.dataset.start);
+      const end = parseFloat(elem.dataset.end);
+
+      if (cur >= start && cur < end) {
+        activeElem = elem;
+        elem.classList.add('active');
+      } else {
+        elem.classList.remove('active');
+      }
+    }
+
+    if (activeElem && activeElem.id !== currentActiveId) {
+      currentActiveId = activeElem.id;
+      if (autoscrollToggle.checked) {
+        const offset = activeElem.offsetTop - (transcriptDiv.clientHeight / 2) + (activeElem.clientHeight / 2);
+        transcriptDiv.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+      }
+    }
+  });
+
+  audioPlayer.addEventListener('seeked', () => { currentActiveId = null; });
+
+  // Export Notes (.txt)
+  document.getElementById('btnExportTxt').addEventListener('click', () => {
+    const flagged = segments.filter(s => s.flagged);
+    if (!flagged.length) return alert('No issues have been flagged for this track.');
+
+    const trackTitle = TRACKS[activeIndex].title;
+    let txt = `AUDIO REVIEW NOTES - ${trackTitle}\nGenerated: ${new Date().toLocaleString()}\n\n`;
+
+    flagged.forEach((item, i) => {
+      txt += `[${i + 1}] TIME: ${formatTime(item.start)} - ${formatTime(item.end)}\n`;
+      txt += `ISSUE: ${item.errorType}\n`;
+      txt += `TEXT: "${item.text}"\n`;
+      txt += `NOTE: ${item.note || 'None'}\n\n`;
+      txt += `----------------------------------------\n\n`;
+    });
+
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${trackTitle.replace(/\s+/g, '_')}_review_notes.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  checkClientAccess();
+</script>
+
+</body>
+</html>
