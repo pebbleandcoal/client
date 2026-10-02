@@ -313,7 +313,7 @@
       font-size: 0.68rem;
       font-family: monospace;
       color: var(--muted);
-      max-width: 170px;
+      max-width: 180px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -840,13 +840,13 @@
       <span class="flag-counter" id="flagCounter">0 Errors Flagged</span>
     </div>
 
-    <!-- Action Bar (Forced Auto-Save & Exports) -->
+    <!-- Action Bar (Conditional Auto-Save & Exports) -->
     <div class="compact-action-bar" id="compactActionBar">
       <span class="bar-section-label">AUTO-SAVE:</span>
-      <button class="btn-xs" id="btnLinkDiskFile" style="border-color: rgba(56, 189, 248, 0.4); color: var(--accent);" title="Connect to local .VTT file for direct auto-save">
+      <button class="btn-xs" id="btnLinkDiskFile" style="border-color: rgba(56, 189, 248, 0.4); color: var(--accent);" title="Connect to local .VTT file for auto-saving subtitle edits">
         💾 VTT Sync
       </button>
-      <button class="btn-xs" id="btnLinkCsvFile" style="border-color: rgba(245, 158, 11, 0.4); color: var(--warning);" title="Connect to local .CSV retake sheet for direct auto-save">
+      <button class="btn-xs" id="btnLinkCsvFile" style="border-color: rgba(245, 158, 11, 0.4); color: var(--warning);" title="Connect to master .CSV retake sheet for direct auto-save">
         📋 CSV Sync
       </button>
 
@@ -931,7 +931,7 @@
       <button type="button" class="btn-ctrl" id="btnLoopSentence" title="Toggle / Clear segment loop [R]">🔁 Loop Cue [R]</button>
 
       <button type="button" class="btn-ctrl" id="btnSplitCurrent" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Split current cue at current playhead position [Press S]">
-        ✂️️ Split Cue [S]
+        ✂ Split Cue [S]
       </button>
 
       <div class="speed-container">
@@ -1249,6 +1249,8 @@
   let activeFilter = 'all';
   let loopingSegmentIndex = null;
 
+  let isVttDirty = false; // Tracks whether subtitle text has actually been modified
+
   let audioCtx = null;
   let audioBuffer = null;
   let channelData = null;
@@ -1266,7 +1268,7 @@
   let scrubStartX = 0;
   let scrubStartTime = 0;
 
-  let diskVttHandle = null;
+  let diskVttHandles = {}; // Cached disk handles per track: { [trackTitle]: handle }
   let diskCsvHandle = null;
   let autoSaveTimeout = null;
 
@@ -1300,7 +1302,7 @@
       btn.textContent = track.title;
       btn.addEventListener('click', () => {
         if (activeIndex !== idx) {
-          persistSession();
+          persistSessionLocal(); // Save only to browser storage before transition
           loadTrack(idx);
         }
       });
@@ -1309,7 +1311,6 @@
   }
 
   async function loadTrack(idx) {
-    // Hard state cleanup before loading the next chapter
     clearLoop();
     audioPlayer.pause();
     audioPlayer.currentTime = 0;
@@ -1318,15 +1319,14 @@
     audioBuffer = null;
     segments = [];
     currentActiveId = null;
-    diskVttHandle = null;
-    btnLinkDiskFile.classList.remove('active-loop');
-    btnLinkDiskFile.textContent = '💾 VTT Sync';
-    updateDiskStatusText();
+    isVttDirty = false; // Reset dirty tracking for incoming chapter
 
     activeIndex = idx;
     const track = TRACKS[idx];
     currentTrackTitle = track.title;
     vttFileName = track.vtt;
+
+    updateVttButtonState();
 
     document.querySelectorAll('.track-pill').forEach((b, i) => b.classList.toggle('active', i === idx));
     statusDiv.textContent = `Loading track "${track.title}"...`;
@@ -1340,7 +1340,7 @@
       const arrayBuf = await res.arrayBuffer();
       processAudioBuffer(arrayBuf);
     } catch (e) {
-      console.warn("Waveform decode over CORS failed, standard playback operational:", e);
+      console.warn("Waveform decode over CORS failed, playback remains operational:", e);
       channelData = null;
       drawWaveform();
     }
@@ -1375,6 +1375,18 @@
       statusDiv.textContent = `Playing "${track.title}", but VTT transcript not found locally.`;
       transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not locate "${track.vtt}". Verify filename in admin configuration.</p>`;
     }
+  }
+
+  function updateVttButtonState() {
+    const handle = diskVttHandles[currentTrackTitle];
+    if (handle) {
+      btnLinkDiskFile.classList.add('active-loop');
+      btnLinkDiskFile.textContent = '💾 VTT Synced';
+    } else {
+      btnLinkDiskFile.classList.remove('active-loop');
+      btnLinkDiskFile.textContent = '💾 VTT Sync';
+    }
+    updateDiskStatusText();
   }
 
   async function processAudioBuffer(arrayBuf) {
@@ -1801,7 +1813,7 @@
     if (isDraggingBoundary) {
       isDraggingBoundary = null;
       draggedCueIndex = null;
-      persistSession();
+      persistSessionLocal();
       renderTranscript();
     }
     if (isScrubbingWaveform) isScrubbingWaveform = false;
@@ -1879,7 +1891,9 @@
     segments.splice(targetIdx + 1, 0, newSecondCue);
     reindexSegments();
 
-    persistSession();
+    isVttDirty = true;
+    onCueContentChanged();
+
     renderTranscript();
     updateLiveSubtitleStrip();
     drawWaveform();
@@ -2007,7 +2021,7 @@
     }
 
     recalculateMetrics(target);
-    persistSession();
+    persistSessionLocal();
     renderTranscript();
     updateLiveSubtitleStrip();
     drawWaveform();
@@ -2028,7 +2042,7 @@
     }
 
     recalculateMetrics(target);
-    persistSession();
+    persistSessionLocal();
     renderTranscript();
     updateLiveSubtitleStrip();
     drawWaveform();
@@ -2050,7 +2064,7 @@
     }
 
     recalculateMetrics(target);
-    persistSession();
+    persistSessionLocal();
     renderTranscript();
     updateLiveSubtitleStrip();
     drawWaveform();
@@ -2082,7 +2096,9 @@
 
     segments.splice(idx, 1);
     reindexSegments();
-    persistSession();
+    isVttDirty = true;
+    onCueContentChanged();
+
     renderTranscript();
     updateLiveSubtitleStrip();
     drawWaveform();
@@ -2099,7 +2115,9 @@
 
     segments.splice(idx, 1);
     reindexSegments();
-    persistSession();
+    isVttDirty = true;
+    onCueContentChanged();
+
     renderTranscript();
     updateLiveSubtitleStrip();
     drawWaveform();
@@ -2129,7 +2147,8 @@
     if (removedCount > 0) {
       reindexSegments();
       clearLoop();
-      persistSession();
+      isVttDirty = true;
+      onCueContentChanged();
       renderTranscript();
       updateLiveSubtitleStrip();
       drawWaveform();
@@ -2178,7 +2197,7 @@
           <button class="btn-sync" onclick="event.stopPropagation(); window.syncSegmentEnd(${idx})">⏱ Set Out</button>
 
           ${idx > 0 ? `<button class="btn-mini" onclick="event.stopPropagation(); window.mergeWithAbove(${idx})">🔗 Merge</button>` : ''}
-          <button class="btn-mini" onclick="event.stopPropagation(); window.splitSegmentDirect(${idx})">✂️ Split</button>
+          <button class="btn-mini" onclick="event.stopPropagation(); window.splitSegmentDirect(${idx})">✂️️ Split</button>
           <button class="btn-danger-sm" onclick="event.stopPropagation(); window.deleteSegment(${idx})">🗑️</button>
 
           <button class="btn-ctrl" style="padding: 2px 7px; font-size: 0.72rem; margin-left: auto;" onclick="event.stopPropagation(); window.playSegment(${idx})">▶ Play</button>
@@ -2227,24 +2246,25 @@
         seg.text = e.target.value;
         recalculateMetrics(seg);
         updateLiveSubtitleStrip();
-        persistSession();
+        isVttDirty = true;
+        onCueContentChanged();
       });
 
       card.querySelector('.flag-btn').addEventListener('click', () => {
         seg.flagged = !seg.flagged;
         card.classList.toggle('flagged', seg.flagged);
         renderTranscript();
-        persistSession();
+        persistSessionLocal();
       });
 
       card.querySelector('.error-type').addEventListener('change', (e) => {
         seg.errorType = e.target.value;
-        persistSession();
+        persistSessionLocal();
       });
 
       card.querySelector('.comment-drawer textarea').addEventListener('input', (e) => {
         seg.note = e.target.value;
-        persistSession();
+        persistSessionLocal();
       });
 
       transcriptDiv.appendChild(card);
@@ -2264,7 +2284,7 @@
     seg.note = seg.note ? `${seg.note}; ${textToAdd}` : textToAdd;
     const textarea = document.querySelector(`#drawer-${idx} textarea`);
     if (textarea) textarea.value = seg.note;
-    persistSession();
+    persistSessionLocal();
   };
 
   window.playSegment = function(idx) {
@@ -2424,7 +2444,7 @@
       if (segIdx !== -1) {
         segments[segIdx].flagged = !segments[segIdx].flagged;
         renderTranscript();
-        persistSession();
+        persistSessionLocal();
       }
     }
   });
@@ -2477,7 +2497,7 @@
   }
 
   function buildAllTracksCsvString() {
-    persistSession();
+    persistSessionLocal();
     const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
     const allRows = [];
 
@@ -2499,20 +2519,19 @@
   }
 
   // ==========================================================
-  // 4. FORCED AUTO-SAVE FILE PICKER HANDLERS
+  // 4. CONDITIONAL AUTO-SAVE HANDLERS
   // ==========================================================
   async function promptAndEnsureVttDiskHandle() {
     if (!supportsFSA) return false;
-    if (diskVttHandle) return true;
+    if (diskVttHandles[currentTrackTitle]) return true;
 
     try {
-      diskVttHandle = await window.showSaveFilePicker({
+      const handle = await window.showSaveFilePicker({
         suggestedName: `${currentTrackTitle.replace(/\s+/g, '_')}_corrected.vtt`,
         types: [{ description: 'WebVTT Subtitles', accept: { 'text/vtt': ['.vtt'] } }]
       });
-      btnLinkDiskFile.classList.add('active-loop');
-      btnLinkDiskFile.textContent = '💾 VTT Sync';
-      updateDiskStatusText();
+      diskVttHandles[currentTrackTitle] = handle;
+      updateVttButtonState();
       return true;
     } catch (err) {
       if (err.name !== 'AbortError') console.error(err);
@@ -2530,7 +2549,7 @@
         types: [{ description: 'CSV Retake Sheet', accept: { 'text/csv': ['.csv'] } }]
       });
       btnLinkCsvFile.classList.add('active-loop');
-      btnLinkCsvFile.textContent = '📋 CSV Sync';
+      btnLinkCsvFile.textContent = '📋 CSV Synced';
       updateDiskStatusText();
       return true;
     } catch (err) {
@@ -2539,28 +2558,22 @@
     }
   }
 
-  async function checkForcedAutoSavePrompt() {
-    if (!supportsFSA) return;
-    if (!diskVttHandle) await promptAndEnsureVttDiskHandle();
-    if (!diskCsvHandle) await promptAndEnsureCsvDiskHandle();
-    await flushToDisk();
-  }
-
   btnLinkDiskFile.addEventListener('click', async () => {
-    diskVttHandle = null;
-    await promptAndEnsureVttDiskHandle();
-    await flushToDisk();
+    delete diskVttHandles[currentTrackTitle];
+    const ok = await promptAndEnsureVttDiskHandle();
+    if (ok) await flushVttToDisk();
   });
 
   btnLinkCsvFile.addEventListener('click', async () => {
     diskCsvHandle = null;
-    await promptAndEnsureCsvDiskHandle();
-    await flushToDisk();
+    const ok = await promptAndEnsureCsvDiskHandle();
+    if (ok) await flushCsvToDisk();
   });
 
   function updateDiskStatusText() {
     const parts = [];
-    if (diskVttHandle) parts.push(diskVttHandle.name);
+    const vttHandle = diskVttHandles[currentTrackTitle];
+    if (vttHandle) parts.push(vttHandle.name);
     if (diskCsvHandle) parts.push(diskCsvHandle.name);
     if (parts.length) {
       diskSaveStatus.style.color = 'var(--success)';
@@ -2570,29 +2583,56 @@
     }
   }
 
-  async function flushToDisk() {
-    if (!segments.length) return;
+  async function flushVttToDisk() {
+    const vttHandle = diskVttHandles[currentTrackTitle];
+    if (!vttHandle || !segments.length) return;
     try {
-      if (diskVttHandle) {
-        const writableVtt = await diskVttHandle.createWritable();
-        await writableVtt.write(buildVTTString());
-        await writableVtt.close();
-      }
-      if (diskCsvHandle) {
-        const writableCsv = await diskCsvHandle.createWritable();
-        await writableCsv.write(buildAllTracksCsvString());
-        await writableCsv.close();
-      }
+      const writable = await vttHandle.createWritable();
+      await writable.write(buildVTTString());
+      await writable.close();
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       diskSaveStatus.style.color = 'var(--success)';
-      diskSaveStatus.textContent = `Auto-saved ${timeStr}`;
+      diskSaveStatus.textContent = `VTT saved ${timeStr}`;
     } catch (err) {
       diskSaveStatus.style.color = 'var(--danger)';
-      diskSaveStatus.textContent = "Write error";
+      diskSaveStatus.textContent = "VTT write error";
     }
   }
 
-  function persistSession() {
+  async function flushCsvToDisk() {
+    if (!diskCsvHandle) return;
+    try {
+      const writable = await diskCsvHandle.createWritable();
+      await writable.write(buildAllTracksCsvString());
+      await writable.close();
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      diskSaveStatus.style.color = 'var(--success)';
+      diskSaveStatus.textContent = `CSV saved ${timeStr}`;
+    } catch (err) {
+      diskSaveStatus.style.color = 'var(--danger)';
+      diskSaveStatus.textContent = "CSV write error";
+    }
+  }
+
+  // Triggered when subtitle text/cues are modified
+  function onCueContentChanged() {
+    persistSessionLocal();
+    if (!supportsFSA) return;
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(async () => {
+      if (isVttDirty) {
+        if (!diskVttHandles[currentTrackTitle]) {
+          const ok = await promptAndEnsureVttDiskHandle();
+          if (ok) await flushVttToDisk();
+        } else {
+          await flushVttToDisk();
+        }
+      }
+    }, 500);
+  }
+
+  // Save only into localStorage (zero disk picker popups)
+  function persistSessionLocal() {
     const key = getStorageKey();
     if (!key || !segments.length) return;
     const payload = segments.map(s => ({
@@ -2605,10 +2645,12 @@
       note: s.note || ''
     }));
     localStorage.setItem(key, JSON.stringify(payload));
-    clearTimeout(autoSaveTimeout);
-    autoSaveTimeout = setTimeout(() => {
-      checkForcedAutoSavePrompt().then(flushToDisk);
-    }, 450);
+
+    // If CSV is synced, flush silently without prompt
+    if (diskCsvHandle) {
+      clearTimeout(autoSaveTimeout);
+      autoSaveTimeout = setTimeout(flushCsvToDisk, 500);
+    }
   }
 
   function loadSession() {
@@ -2653,7 +2695,6 @@
     URL.revokeObjectURL(url);
   }
 
-  // Export Notes (.txt)
   document.getElementById('btnExportTxt').addEventListener('click', () => {
     const flagged = segments.filter(s => s.flagged);
     if (!flagged.length) return alert('No issues have been flagged for this track.');
@@ -2693,7 +2734,7 @@
     downloadBlob(csvContent, `Master_Project_Retake_Sheet.csv`, 'text/csv;charset=utf-8');
   });
 
-  // Access Entry Point
+  // Entry Point
   checkClientAccess();
 </script>
 </body>
