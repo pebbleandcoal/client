@@ -76,8 +76,6 @@
       align-items: center;
       flex-wrap: wrap;
     }
-
-    /* Track Selector */
     .track-section {
       display: flex;
       flex-direction: column;
@@ -115,7 +113,6 @@
       font-weight: 700;
       border-color: var(--accent);
     }
-
     select {
       background: #0f172a;
       border: 1px solid var(--border);
@@ -125,7 +122,6 @@
       font-size: 0.78rem;
       outline: none;
     }
-
     .player-row {
       display: flex;
       gap: 12px;
@@ -140,8 +136,6 @@
       white-space: nowrap;
       user-select: none;
     }
-
-    /* Waveform Container */
     .waveform-outer {
       position: relative;
       display: flex;
@@ -190,8 +184,6 @@
       pointer-events: none;
       user-select: none;
     }
-
-    /* Subtitle Strip with Set In / Set Out */
     .live-subtitle-strip {
       background: #040810;
       border: 1px solid var(--border);
@@ -222,7 +214,6 @@
       font-size: 0.8rem;
       font-style: italic;
     }
-
     .btn-set-in {
       background: #10b981;
       color: #040810;
@@ -239,7 +230,6 @@
       box-shadow: 0 0 6px rgba(16, 185, 129, 0.25);
     }
     .btn-set-in:hover { background: #059669; color: #fff; }
-
     .btn-set-out {
       background: #ef4444;
       color: #fff;
@@ -256,8 +246,6 @@
       box-shadow: 0 0 6px rgba(239, 68, 68, 0.25);
     }
     .btn-set-out:hover { background: #dc2626; }
-
-    /* Single-Line Action & Forced Auto-Save Bar */
     .compact-action-bar {
       display: flex;
       align-items: center;
@@ -332,8 +320,6 @@
       flex-shrink: 0;
       margin: 0 2px;
     }
-
-    /* Playback Controls Bar */
     .playback-controls {
       display: flex;
       gap: 8px;
@@ -369,7 +355,6 @@
       border-color: var(--success);
       color: var(--success);
     }
-
     .btn-sync {
       background: rgba(56, 189, 248, 0.15);
       border: 1px solid rgba(56, 189, 248, 0.4);
@@ -414,7 +399,6 @@
       cursor: pointer;
     }
     .btn-mini:hover { background: #334155; color: var(--accent); }
-
     .zoom-slider {
       -webkit-appearance: none;
       appearance: none;
@@ -434,7 +418,6 @@
       background: var(--accent);
       cursor: pointer;
     }
-
     .speed-container {
       display: flex;
       align-items: center;
@@ -469,7 +452,6 @@
       user-select: none;
       font-size: 0.78rem;
     }
-
     .shortcut-legend {
       font-size: 0.69rem;
       color: var(--muted);
@@ -486,8 +468,6 @@
       color: var(--accent);
       font-family: monospace;
     }
-
-    /* Filter Bar */
     .filter-bar {
       display: flex;
       gap: 6px;
@@ -539,8 +519,6 @@
       white-space: nowrap;
       flex-shrink: 0;
     }
-
-    /* Quick Note Direction Pills */
     .quick-pill-container {
       display: flex;
       gap: 4px;
@@ -562,8 +540,6 @@
       color: var(--accent);
       border-color: var(--accent);
     }
-
-    /* Transcript Viewer */
     #transcript {
       background: var(--card);
       border: 1px solid var(--border);
@@ -643,7 +619,6 @@
     .pace-fast { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
     .pace-norm { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
     .pace-slow { background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4); }
-
     .seg-text-input {
       background: rgba(9, 13, 22, 0.5);
       border: 1px solid transparent;
@@ -705,8 +680,6 @@
       resize: vertical;
       min-height: 38px;
     }
-
-    /* Modals & Overlays */
     .overlay-backdrop {
       position: fixed;
       inset: 0;
@@ -729,9 +702,7 @@
       gap: 14px;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
-    .modal-box.admin-mode {
-      max-width: 680px;
-    }
+    .modal-box.admin-mode { max-width: 680px; }
     .modal-box h3 { margin: 0; font-size: 1.2rem; color: #fff; }
     .modal-box p { margin: 0; font-size: 0.85rem; color: var(--muted); }
     .modal-box input, .modal-box textarea {
@@ -844,7 +815,7 @@
   </div>
 
   <div class="panel">
-    <!-- Chapter / Track Selector (Cloud / Configured Tracks) -->
+    <!-- Chapter / Track Selector -->
     <div class="track-section" id="trackSection">
       <span class="track-label">Select Chapter / Track:</span>
       <div class="track-grid" id="trackGrid"></div>
@@ -892,8 +863,8 @@
 
       <span class="bar-divider"></span>
 
-      <button class="btn-xs btn-xs-danger" id="btnClearStorage" style="margin-left: auto;" title="Clear local cache and reload">
-        Reset Session
+      <button class="btn-xs btn-xs-danger" id="btnClearStorage" style="margin-left: auto;" title="Clear local cache for this chapter and reload">
+        Reset Chapter
       </button>
     </div>
 
@@ -936,7 +907,7 @@
           ◀ SET IN [I]
         </button>
         
-        <div class="live-sub-text placeholder" id="liveSubText">Load audio and VTT to begin</div>
+        <div class="live-sub-text placeholder" id="liveSubText">Select a chapter to begin</div>
         
         <button type="button" class="btn-set-out" id="btnSetOutQuick" title="Set OUT boundary of active cue to current playhead [Press O]">
           SET OUT [O] ▶
@@ -960,7 +931,7 @@
       <button type="button" class="btn-ctrl" id="btnLoopSentence" title="Toggle / Clear segment loop [R]">🔁 Loop Cue [R]</button>
 
       <button type="button" class="btn-ctrl" id="btnSplitCurrent" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Split current cue at current playhead position [Press S]">
-        ✂️ Split Cue [S]
+        ✂️️ Split Cue [S]
       </button>
 
       <div class="speed-container">
@@ -1307,6 +1278,15 @@
     diskSaveStatus.textContent = "Unsupported";
   }
 
+  function getStorageKeyForTrack(trackTitle) {
+    const safeTitle = (trackTitle || 'default').replace(/\s+/g, '_');
+    return getScopedKey(`qc_review_${safeTitle}`);
+  }
+
+  function getStorageKey() {
+    return getStorageKeyForTrack(currentTrackTitle);
+  }
+
   function initApp() {
     renderTrackGrid();
     if (TRACKS.length > 0) loadTrack(0);
@@ -1329,6 +1309,20 @@
   }
 
   async function loadTrack(idx) {
+    // Hard state cleanup before loading the next chapter
+    clearLoop();
+    audioPlayer.pause();
+    audioPlayer.currentTime = 0;
+    cancelAnimationFrame(animFrameId);
+    channelData = null;
+    audioBuffer = null;
+    segments = [];
+    currentActiveId = null;
+    diskVttHandle = null;
+    btnLinkDiskFile.classList.remove('active-loop');
+    btnLinkDiskFile.textContent = '💾 VTT Sync';
+    updateDiskStatusText();
+
     activeIndex = idx;
     const track = TRACKS[idx];
     currentTrackTitle = track.title;
@@ -1339,7 +1333,6 @@
 
     const directUrl = getDirectAudioUrl(track.audio);
     audioPlayer.src = directUrl;
-    currentActiveId = null;
 
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1380,7 +1373,7 @@
       segments = [];
       renderTranscript();
       statusDiv.textContent = `Playing "${track.title}", but VTT transcript not found locally.`;
-      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not locate "${track.vtt}". Ensure it exists in your directory or configure in admin.</p>`;
+      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not locate "${track.vtt}". Verify filename in admin configuration.</p>`;
     }
   }
 
@@ -1544,7 +1537,7 @@
       ctx.fillStyle = '#334155';
       ctx.font = '12px system-ui';
       ctx.textAlign = 'center';
-      ctx.fillText('Waveform preview available when loaded locally or over CORS.', width / 2, height / 2);
+      ctx.fillText('Waveform preview unavailable over CORS.', width / 2, height / 2);
       ctx.textAlign = 'left';
       return;
     }
@@ -2454,14 +2447,6 @@
     flagCounter.textContent = `${flagged} ${flagged === 1 ? 'Error' : 'Errors'} Flagged`;
   }
 
-  function getStorageKeyForTitle(title) {
-    return `qc_review_${title.replace(/\s+/g, '_')}`;
-  }
-
-  function getStorageKey() {
-    return getStorageKeyForTitle(currentTrackTitle);
-  }
-
   function buildVTTString() {
     return 'WEBVTT\n\n' + segments.map((s, idx) => {
       return `${idx + 1}\n${formatFullTime(s.start, false)} --> ${formatFullTime(s.end, false)}\n${s.text}\n`;
@@ -2472,9 +2457,8 @@
     return `"${(val || '').toString().replace(/"/g, '""')}"`;
   }
 
-  // File - Cue # - Time Start - Time End - Issue Type - Script Phrase - Reviewer Note
   function generateCsvFromSegments(items, fileName) {
-    const flagged = items.filter(s => s.flagged);
+    const flagged = (items || []).filter(s => s && s.flagged);
     return flagged.map((s, i) => [
       formatCsvCell(fileName),
       s.id !== undefined ? s.id + 1 : i + 1,
@@ -2497,18 +2481,17 @@
     const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
     const allRows = [];
 
-    const currentRows = generateCsvFromSegments(segments, currentTrackTitle);
-    allRows.push(...currentRows);
-
     TRACKS.forEach(track => {
-      if (track.title === currentTrackTitle) return;
-      const savedRaw = localStorage.getItem(getStorageKeyForTitle(track.title));
-      if (savedRaw) {
-        try {
-          const parsed = JSON.parse(savedRaw);
-          const trackRows = generateCsvFromSegments(parsed, track.title);
-          allRows.push(...trackRows);
-        } catch(e) {}
+      if (track.title === currentTrackTitle) {
+        allRows.push(...generateCsvFromSegments(segments, currentTrackTitle));
+      } else {
+        const savedRaw = localStorage.getItem(getStorageKeyForTrack(track.title));
+        if (savedRaw) {
+          try {
+            const parsed = JSON.parse(savedRaw);
+            allRows.push(...generateCsvFromSegments(parsed, track.title));
+          } catch(e) {}
+        }
       }
     });
 
@@ -2528,7 +2511,7 @@
         types: [{ description: 'WebVTT Subtitles', accept: { 'text/vtt': ['.vtt'] } }]
       });
       btnLinkDiskFile.classList.add('active-loop');
-      btnLinkDiskFile.textContent = '💾 VTT Synced';
+      btnLinkDiskFile.textContent = '💾 VTT Sync';
       updateDiskStatusText();
       return true;
     } catch (err) {
@@ -2547,7 +2530,7 @@
         types: [{ description: 'CSV Retake Sheet', accept: { 'text/csv': ['.csv'] } }]
       });
       btnLinkCsvFile.classList.add('active-loop');
-      btnLinkCsvFile.textContent = '📋 CSV Synced';
+      btnLinkCsvFile.textContent = '📋 CSV Sync';
       updateDiskStatusText();
       return true;
     } catch (err) {
@@ -2558,11 +2541,9 @@
 
   async function checkForcedAutoSavePrompt() {
     if (!supportsFSA) return;
-    if (!diskVttHandle || !diskCsvHandle) {
-      if (!diskVttHandle) await promptAndEnsureVttDiskHandle();
-      if (!diskCsvHandle) await promptAndEnsureCsvDiskHandle();
-      await flushToDisk();
-    }
+    if (!diskVttHandle) await promptAndEnsureVttDiskHandle();
+    if (!diskCsvHandle) await promptAndEnsureCsvDiskHandle();
+    await flushToDisk();
   }
 
   btnLinkDiskFile.addEventListener('click', async () => {
@@ -2584,6 +2565,8 @@
     if (parts.length) {
       diskSaveStatus.style.color = 'var(--success)';
       diskSaveStatus.textContent = `(${parts.join(', ')})`;
+    } else {
+      diskSaveStatus.textContent = '';
     }
   }
 
@@ -2617,9 +2600,9 @@
       start: s.start,
       end: s.end,
       text: s.text,
-      flagged: s.flagged,
-      errorType: s.errorType,
-      note: s.note
+      flagged: !!s.flagged,
+      errorType: s.errorType || 'Mispronunciation',
+      note: s.note || ''
     }));
     localStorage.setItem(key, JSON.stringify(payload));
     clearTimeout(autoSaveTimeout);
@@ -2641,9 +2624,9 @@
           if (item.start !== undefined) segments[index].start = item.start;
           if (item.end !== undefined) segments[index].end = item.end;
           segments[index].text = item.text;
-          segments[index].flagged = item.flagged;
-          segments[index].errorType = item.errorType;
-          segments[index].note = item.note;
+          segments[index].flagged = !!item.flagged;
+          segments[index].errorType = item.errorType || 'Mispronunciation';
+          segments[index].note = item.note || '';
           recalculateMetrics(segments[index]);
         }
       });
@@ -2652,9 +2635,9 @@
 
   btnClearStorage.addEventListener('click', () => {
     const key = getStorageKey();
-    if (key && confirm("Reset all saved notes, retimed cues, and flags for this file?")) {
+    if (key && confirm(`Reset saved notes and retimed cues for "${currentTrackTitle}"?`)) {
       localStorage.removeItem(key);
-      location.reload();
+      loadTrack(activeIndex);
     }
   });
 
