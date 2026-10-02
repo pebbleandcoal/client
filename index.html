@@ -840,7 +840,7 @@
       <span class="flag-counter" id="flagCounter">0 Errors Flagged</span>
     </div>
 
-    <!-- Action Bar (Conditional Auto-Save & Exports) -->
+    <!-- Action Bar (Auto-Save & Exports) -->
     <div class="compact-action-bar" id="compactActionBar">
       <span class="bar-section-label">AUTO-SAVE:</span>
       <button class="btn-xs" id="btnLinkDiskFile" style="border-color: rgba(56, 189, 248, 0.4); color: var(--accent);" title="Connect to local .VTT file for auto-saving subtitle edits">
@@ -1249,7 +1249,7 @@
   let activeFilter = 'all';
   let loopingSegmentIndex = null;
 
-  let isVttDirty = false; // Tracks whether subtitle text has actually been modified
+  let isVttDirty = false;
 
   let audioCtx = null;
   let audioBuffer = null;
@@ -1268,7 +1268,7 @@
   let scrubStartX = 0;
   let scrubStartTime = 0;
 
-  let diskVttHandles = {}; // Cached disk handles per track: { [trackTitle]: handle }
+  let diskVttHandles = {};
   let diskCsvHandle = null;
   let autoSaveTimeout = null;
 
@@ -1302,7 +1302,7 @@
       btn.textContent = track.title;
       btn.addEventListener('click', () => {
         if (activeIndex !== idx) {
-          persistSessionLocal(); // Save only to browser storage before transition
+          persistSessionLocal();
           loadTrack(idx);
         }
       });
@@ -1319,7 +1319,7 @@
     audioBuffer = null;
     segments = [];
     currentActiveId = null;
-    isVttDirty = false; // Reset dirty tracking for incoming chapter
+    isVttDirty = false;
 
     activeIndex = idx;
     const track = TRACKS[idx];
@@ -2197,7 +2197,7 @@
           <button class="btn-sync" onclick="event.stopPropagation(); window.syncSegmentEnd(${idx})">⏱ Set Out</button>
 
           ${idx > 0 ? `<button class="btn-mini" onclick="event.stopPropagation(); window.mergeWithAbove(${idx})">🔗 Merge</button>` : ''}
-          <button class="btn-mini" onclick="event.stopPropagation(); window.splitSegmentDirect(${idx})">✂️️ Split</button>
+          <button class="btn-mini" onclick="event.stopPropagation(); window.splitSegmentDirect(${idx})">✂ Split</button>
           <button class="btn-danger-sm" onclick="event.stopPropagation(); window.deleteSegment(${idx})">🗑️</button>
 
           <button class="btn-ctrl" style="padding: 2px 7px; font-size: 0.72rem; margin-left: auto;" onclick="event.stopPropagation(); window.playSegment(${idx})">▶ Play</button>
@@ -2250,11 +2250,11 @@
         onCueContentChanged();
       });
 
-      card.querySelector('.flag-btn').addEventListener('click', () => {
+      card.querySelector('.flag-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
         seg.flagged = !seg.flagged;
-        card.classList.toggle('flagged', seg.flagged);
-        renderTranscript();
         persistSessionLocal();
+        renderTranscript();
       });
 
       card.querySelector('.error-type').addEventListener('change', (e) => {
@@ -2443,8 +2443,8 @@
       const segIdx = segments.findIndex(s => cur >= s.start && cur < s.end);
       if (segIdx !== -1) {
         segments[segIdx].flagged = !segments[segIdx].flagged;
-        renderTranscript();
         persistSessionLocal();
+        renderTranscript();
       }
     }
   });
@@ -2478,7 +2478,7 @@
   }
 
   function generateCsvFromSegments(items, fileName) {
-    const flagged = (items || []).filter(s => s && s.flagged);
+    const flagged = (items || []).filter(s => s && s.flagged === true);
     return flagged.map((s, i) => [
       formatCsvCell(fileName),
       s.id !== undefined ? s.id + 1 : i + 1,
@@ -2497,7 +2497,6 @@
   }
 
   function buildAllTracksCsvString() {
-    persistSessionLocal();
     const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
     const allRows = [];
 
@@ -2587,7 +2586,8 @@
     const vttHandle = diskVttHandles[currentTrackTitle];
     if (!vttHandle || !segments.length) return;
     try {
-      const writable = await vttHandle.createWritable();
+      const writable = await vttHandle.createWritable({ keepExistingData: false });
+      await writable.truncate(0);
       await writable.write(buildVTTString());
       await writable.close();
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -2602,7 +2602,8 @@
   async function flushCsvToDisk() {
     if (!diskCsvHandle) return;
     try {
-      const writable = await diskCsvHandle.createWritable();
+      const writable = await diskCsvHandle.createWritable({ keepExistingData: false });
+      await writable.truncate(0);
       await writable.write(buildAllTracksCsvString());
       await writable.close();
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -2614,7 +2615,6 @@
     }
   }
 
-  // Triggered when subtitle text/cues are modified
   function onCueContentChanged() {
     persistSessionLocal();
     if (!supportsFSA) return;
@@ -2631,7 +2631,6 @@
     }, 500);
   }
 
-  // Save only into localStorage (zero disk picker popups)
   function persistSessionLocal() {
     const key = getStorageKey();
     if (!key || !segments.length) return;
@@ -2640,13 +2639,12 @@
       start: s.start,
       end: s.end,
       text: s.text,
-      flagged: !!s.flagged,
+      flagged: s.flagged === true,
       errorType: s.errorType || 'Mispronunciation',
       note: s.note || ''
     }));
     localStorage.setItem(key, JSON.stringify(payload));
 
-    // If CSV is synced, flush silently without prompt
     if (diskCsvHandle) {
       clearTimeout(autoSaveTimeout);
       autoSaveTimeout = setTimeout(flushCsvToDisk, 500);
@@ -2666,7 +2664,7 @@
           if (item.start !== undefined) segments[index].start = item.start;
           if (item.end !== undefined) segments[index].end = item.end;
           segments[index].text = item.text;
-          segments[index].flagged = !!item.flagged;
+          segments[index].flagged = item.flagged === true;
           segments[index].errorType = item.errorType || 'Mispronunciation';
           segments[index].note = item.note || '';
           recalculateMetrics(segments[index]);
@@ -2722,12 +2720,14 @@
   });
 
   document.getElementById('btnExportCsv').addEventListener('click', () => {
+    persistSessionLocal();
     const csvContent = buildCsvString();
     if (!segments.some(s => s.flagged)) return alert('No errors currently flagged for this chapter.');
     downloadBlob(csvContent, `${currentTrackTitle.replace(/\s+/g, '_')}_retakes.csv`, 'text/csv;charset=utf-8');
   });
 
   document.getElementById('btnExportAllCsv').addEventListener('click', () => {
+    persistSessionLocal();
     const csvContent = buildAllTracksCsvString();
     const rowsCount = csvContent.split('\n').filter(Boolean).length;
     if (rowsCount <= 1) return alert('No errors currently flagged in any chapter.');
