@@ -906,7 +906,8 @@
       <button class="btn-xs" id="btnExportTxt" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">Notes (.txt)</button>
       <button class="btn-xs" id="btnExportVtt">Export .VTT</button>
       <button class="btn-xs" id="btnExportSrt">Export .SRT</button>
-      <button class="btn-xs" id="btnExportCsv">Retake Sheet (.csv)</button>
+      <button class="btn-xs" id="btnExportCsv" title="Export flagged errors from current chapter">Retake CSV (Current)</button>
+      <button class="btn-xs" id="btnExportAllCsv" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Export flagged errors across all project chapters">Retake CSV (All Files)</button>
 
       <span class="bar-divider"></span>
 
@@ -1339,7 +1340,10 @@
       btn.className = `track-pill ${idx === activeIndex ? 'active' : ''}`;
       btn.textContent = track.title;
       btn.addEventListener('click', () => {
-        if (activeIndex !== idx) loadTrack(idx);
+        if (activeIndex !== idx) {
+          persistSession();
+          loadTrack(idx);
+        }
       });
       trackGrid.appendChild(btn);
     });
@@ -1358,19 +1362,17 @@
     audioPlayer.src = directUrl;
     currentActiveId = null;
 
-    // Decode audio waveform via fetch
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const res = await fetch(directUrl);
       const arrayBuf = await res.arrayBuffer();
       processAudioBuffer(arrayBuf);
     } catch (e) {
-      console.warn("Waveform decode over CORS failed, standard playback remains operational:", e);
+      console.warn("Waveform decode over CORS failed, standard playback operational:", e);
       channelData = null;
       drawWaveform();
     }
 
-    // Attempt to load associated VTT
     let vttCandidates = [
       track.vtt,
       track.vtt.replace(/[-_]/g, ' '),
@@ -1424,10 +1426,10 @@
     }
   }
 
-  // Local File Upload Handlers
   audioInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    persistSession();
     currentTrackTitle = file.name.replace(/\.[^/.]+$/, '');
     activeIndex = -1;
     document.querySelectorAll('.track-pill').forEach(b => b.classList.remove('active'));
@@ -1461,7 +1463,6 @@
     reader.readAsText(file);
   });
 
-  // Waveform Magnetic Snapping
   function findNearestSilenceSnap(targetSec, searchRadiusSec = 0.18) {
     if (!channelData || !magneticSnapEnabled) return targetSec;
     const startSample = Math.max(0, Math.floor((targetSec - searchRadiusSec) * sampleRate));
@@ -1904,13 +1905,13 @@
   function handleQuickSetIn() {
     const { idx } = getActiveOrClosestCue();
     if (idx !== null) syncSegmentStart(idx);
-    else statusDiv.textContent = "No cue active at the current playhead.";
+    else statusDiv.textContent = "No cue active at current playhead.";
   }
 
   function handleQuickSetOut() {
     const { idx } = getActiveOrClosestCue();
     if (idx !== null) syncSegmentEnd(idx);
-    else statusDiv.textContent = "No cue active at the current playhead.";
+    else statusDiv.textContent = "No cue active at current playhead.";
   }
 
   btnSetInQuick.addEventListener('click', handleQuickSetIn);
@@ -1947,7 +1948,7 @@
     renderTranscript();
     updateLiveSubtitleStrip();
     drawWaveform();
-    statusDiv.textContent = `✂️ Split Cue #${targetIdx + 1} at ${formatTime(cur)}.`;
+    statusDiv.textContent = `✂️️ Split Cue #${targetIdx + 1} at ${formatTime(cur)}.`;
   }
 
   btnSplitCurrent.addEventListener('click', splitCueAtPlayhead);
@@ -2059,8 +2060,7 @@
   window.syncSegmentStart = function(idx) {
     const cur = parseFloat(audioPlayer.currentTime.toFixed(3));
     const target = segments[idx];
-    if (!target) return;
-    if (cur >= target.end - 0.08) return;
+    if (!target || cur >= target.end - 0.08) return;
 
     target.start = findNearestSilenceSnap(cur);
     if (idx > 0) {
@@ -2081,8 +2081,7 @@
   window.syncSegmentEnd = function(idx) {
     const cur = parseFloat(audioPlayer.currentTime.toFixed(3));
     const target = segments[idx];
-    if (!target) return;
-    if (cur <= target.start + 0.08) return;
+    if (!target || cur <= target.start + 0.08) return;
 
     target.end = findNearestSilenceSnap(cur);
     if (idx < segments.length - 1) {
@@ -2513,8 +2512,12 @@
     flagCounter.textContent = `${flagged} ${flagged === 1 ? 'Error' : 'Errors'} Flagged`;
   }
 
+  function getStorageKeyForTitle(title) {
+    return `qc_review_${title.replace(/\s+/g, '_')}`;
+  }
+
   function getStorageKey() {
-    return `qc_review_${currentTrackTitle.replace(/\s+/g, '_')}`;
+    return getStorageKeyForTitle(currentTrackTitle);
   }
 
   function buildVTTString() {
@@ -2523,18 +2526,53 @@
     }).join('\n');
   }
 
+  function formatCsvCell(val) {
+    return `"${(val || '').toString().replace(/"/g, '""')}"`;
+  }
+
+  // Generate CSV formatted specifically as File, Cue #, Time Start, Time End, Issue Type, Script Phrase, Reviewer Note
+  function generateCsvFromSegments(items, fileName) {
+    const flagged = items.filter(s => s.flagged);
+    return flagged.map((s, i) => [
+      formatCsvCell(fileName),
+      s.id !== undefined ? s.id + 1 : i + 1,
+      formatCsvCell(formatTime(s.start)),
+      formatCsvCell(formatTime(s.end)),
+      formatCsvCell(s.errorType || 'Mispronunciation'),
+      formatCsvCell(s.text),
+      formatCsvCell(s.note || '')
+    ].join(','));
+  }
+
   function buildCsvString() {
-    const flagged = segments.filter(s => s.flagged);
-    const headers = ['Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
-    const rows = flagged.map((s, i) => [
-      i + 1,
-      formatTime(s.start),
-      formatTime(s.end),
-      `"${s.errorType.replace(/"/g, '""')}"`,
-      `"${s.text.replace(/"/g, '""')}"`,
-      `"${(s.note || '').replace(/"/g, '""')}"`
-    ]);
-    return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
+    const rows = generateCsvFromSegments(segments, currentTrackTitle);
+    return [headers.join(','), ...rows].join('\n');
+  }
+
+  function buildAllTracksCsvString() {
+    persistSession(); // Save current work first
+    const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
+    const allRows = [];
+
+    // Collect from current segments
+    const currentRows = generateCsvFromSegments(segments, currentTrackTitle);
+    allRows.push(...currentRows);
+
+    // Collect stored flags from other tracks in the project
+    TRACKS.forEach(track => {
+      if (track.title === currentTrackTitle) return; // already included
+      const savedRaw = localStorage.getItem(getStorageKeyForTitle(track.title));
+      if (savedRaw) {
+        try {
+          const parsed = JSON.parse(savedRaw);
+          const trackRows = generateCsvFromSegments(parsed, track.title);
+          allRows.push(...trackRows);
+        } catch(e) {}
+      }
+    });
+
+    return [headers.join(','), ...allRows].join('\n');
   }
 
   btnLinkDiskFile.addEventListener('click', async () => {
@@ -2685,10 +2723,19 @@
     downloadBlob(srt, `${currentTrackTitle.replace(/\s+/g, '_')}_corrected.srt`, 'text/plain;charset=utf-8');
   });
 
+  // Export Current Chapter Retake CSV
   document.getElementById('btnExportCsv').addEventListener('click', () => {
     const csvContent = buildCsvString();
-    if (!segments.some(s => s.flagged)) return alert('No errors currently flagged to export.');
-    downloadBlob(csvContent, `${currentTrackTitle.replace(/\s+/g, '_')}_retake_sheet.csv`, 'text/csv;charset=utf-8');
+    if (!segments.some(s => s.flagged)) return alert('No errors currently flagged for this chapter.');
+    downloadBlob(csvContent, `${currentTrackTitle.replace(/\s+/g, '_')}_retakes.csv`, 'text/csv;charset=utf-8');
+  });
+
+  // Export All Chapters Combined Retake CSV
+  document.getElementById('btnExportAllCsv').addEventListener('click', () => {
+    const csvContent = buildAllTracksCsvString();
+    const rowsCount = csvContent.split('\n').filter(Boolean).length;
+    if (rowsCount <= 1) return alert('No errors currently flagged in any chapter.');
+    downloadBlob(csvContent, `Master_Project_Retake_Sheet.csv`, 'text/csv;charset=utf-8');
   });
 
   // Access Entry Point
