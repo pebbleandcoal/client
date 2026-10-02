@@ -378,17 +378,6 @@
       cursor: pointer;
     }
     .btn-nudge:hover { background: #334155; color: #fff; }
-    .btn-danger-sm {
-      background: rgba(244, 63, 94, 0.15);
-      border: 1px solid rgba(244, 63, 94, 0.35);
-      color: #fda4af;
-      padding: 2px 7px;
-      font-size: 0.7rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .btn-danger-sm:hover { background: var(--danger); color: #fff; }
     .btn-mini {
       background: #1e293b;
       border: 1px solid var(--border);
@@ -619,23 +608,16 @@
     .pace-fast { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
     .pace-norm { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
     .pace-slow { background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4); }
-    .seg-text-input {
+    .seg-text-display {
       background: rgba(9, 13, 22, 0.5);
-      border: 1px solid transparent;
+      border: 1px solid rgba(255, 255, 255, 0.05);
       color: var(--text);
-      padding: 5px 7px;
+      padding: 6px 8px;
       border-radius: 5px;
       font-family: inherit;
       font-size: 0.86rem;
       line-height: 1.45;
-      resize: none;
-      width: 100%;
-      min-height: 36px;
-    }
-    .seg-text-input:focus {
-      outline: none;
-      border-color: var(--accent);
-      background: #090d16;
+      user-select: text;
     }
     .seg-footer {
       display: flex;
@@ -840,12 +822,9 @@
       <span class="flag-counter" id="flagCounter">0 Errors Flagged</span>
     </div>
 
-    <!-- Action Bar (Auto-Save & Exports) -->
+    <!-- Action Bar (Simplified: Retake CSV Sheets & Notes only) -->
     <div class="compact-action-bar" id="compactActionBar">
       <span class="bar-section-label">AUTO-SAVE:</span>
-      <button class="btn-xs" id="btnLinkDiskFile" style="border-color: rgba(56, 189, 248, 0.4); color: var(--accent);" title="Connect to local .VTT file for auto-saving subtitle edits">
-        💾 VTT Sync
-      </button>
       <button class="btn-xs" id="btnLinkCsvFile" style="border-color: rgba(245, 158, 11, 0.4); color: var(--warning);" title="Connect to master .CSV retake sheet for direct auto-save">
         📋 CSV Sync
       </button>
@@ -856,8 +835,6 @@
 
       <span class="bar-section-label">EXPORTS:</span>
       <button class="btn-xs" id="btnExportTxt" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">Notes (.txt)</button>
-      <button class="btn-xs" id="btnExportVtt">Export .VTT</button>
-      <button class="btn-xs" id="btnExportSrt">Export .SRT</button>
       <button class="btn-xs" id="btnExportCsv" title="Export flagged errors from current chapter">Retake CSV (Current)</button>
       <button class="btn-xs" id="btnExportAllCsv" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Export flagged errors across all project chapters">Retake CSV (All Files)</button>
 
@@ -884,16 +861,6 @@
         <button class="btn-nudge" id="btnPlayheadBackSlow" title="Step back 0.1s (100ms)">◀ -0.1s</button>
         <button class="btn-nudge" id="btnPlayheadFwdSlow" title="Step forward 0.1s (100ms)">+0.1s ▶</button>
         <button class="btn-nudge" id="btnPlayheadFwdFast" title="Step forward 0.5s">+0.5s ⏩</button>
-
-        <span style="border-left: 1px solid var(--border); height: 14px; margin: 0 3px;"></span>
-
-        <button class="btn-mini active-loop" id="btnSnapToggle" title="Magnetically snap In/Out boundary to silence dips when dragging">
-          🧲 Snap: ON
-        </button>
-
-        <span style="margin-left: auto; font-size: 0.7rem; color: var(--muted);">
-          Audition In [Q] | Audition Out [E] | Split Cue [S]
-        </span>
       </div>
 
       <div class="waveform-wrap" id="waveWrap">
@@ -908,10 +875,6 @@
         </button>
         
         <div class="live-sub-text placeholder" id="liveSubText">Select a chapter to begin</div>
-        
-        <button type="button" class="btn-set-out" id="btnSetOutQuick" title="Set OUT boundary of active cue to current playhead [Press O]">
-          SET OUT [O] ▶
-        </button>
       </div>
     </div>
 
@@ -930,10 +893,6 @@
       <button type="button" class="btn-ctrl" id="btnForward5" title="Jump forward 5s [L]">+5s ↻ [L]</button>
       <button type="button" class="btn-ctrl" id="btnLoopSentence" title="Toggle / Clear segment loop [R]">🔁 Loop Cue [R]</button>
 
-      <button type="button" class="btn-ctrl" id="btnSplitCurrent" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Split current cue at current playhead position [Press S]">
-        ✂ Split Cue [S]
-      </button>
-
       <div class="speed-container">
         <label for="speedSlider">Speed [ [ / ] ]:</label>
         <input type="range" id="speedSlider" class="speed-slider" min="0.5" max="2.0" step="0.01" value="1.0" title="Double click to reset to 1.00x">
@@ -946,10 +905,9 @@
 
       <div class="shortcut-legend">
         <span><kbd>Space</kbd> Play</span>
-        <span><kbd>Q</kbd> Head</span>
-        <span><kbd>E</kbd> Tail</span>
-        <span><kbd>S</kbd> Split</span>
-        <span><kbd>I</kbd>/<kbd>O</kbd> Set In/Out</span>
+        <span><kbd>I</kbd> Set In</span>
+        <span><kbd>R</kbd> Loop</span>
+        <span><kbd>F</kbd> Flag</span>
       </div>
     </div>
   </div>
@@ -1125,17 +1083,6 @@
     }
   });
 
-  window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
-      e.preventDefault();
-      openAdminChallenge();
-    }
-  });
-
-  if (window.location.search.includes('admin')) {
-    setTimeout(openAdminChallenge, 150);
-  }
-
   function openAdminPanel() {
     adminClientPassSetting.value = getClientPassword();
     adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
@@ -1203,11 +1150,7 @@
   const waveModeBadge = document.getElementById('waveModeBadge');
   const liveSubText = document.getElementById('liveSubText');
   const trackGrid = document.getElementById('trackGrid');
-
   const btnSetInQuick = document.getElementById('btnSetInQuick');
-  const btnSetOutQuick = document.getElementById('btnSetOutQuick');
-  const btnSnapToggle = document.getElementById('btnSnapToggle');
-  const btnSplitCurrent = document.getElementById('btnSplitCurrent');
 
   const zoomWindowSlider = document.getElementById('zoomWindowSlider');
   const zoomWindowVal = document.getElementById('zoomWindowVal');
@@ -1237,46 +1180,35 @@
   const errorFilter = document.getElementById('errorFilter');
   const btnClearStorage = document.getElementById('btnClearStorage');
 
-  const btnLinkDiskFile = document.getElementById('btnLinkDiskFile');
   const btnLinkCsvFile = document.getElementById('btnLinkCsvFile');
   const diskSaveStatus = document.getElementById('diskSaveStatus');
 
   let currentTrackTitle = "Chapter 1";
-  let vttFileName = "Chapter 1.vtt";
   let activeIndex = -1;
   let segments = [];
   let currentActiveId = null;
   let activeFilter = 'all';
   let loopingSegmentIndex = null;
 
-  let isVttDirty = false;
-
   let audioCtx = null;
   let audioBuffer = null;
   let channelData = null;
   let sampleRate = 44100;
-  let totalAudioSeconds = 0;
   let animFrameId = null;
 
   let currentWindowSpan = 10.0;
-  let magneticSnapEnabled = true;
   let globalPeakScaleFactor = 1.0;
 
   let isScrubbingWaveform = false;
-  let isDraggingBoundary = null;
-  let draggedCueIndex = null;
   let scrubStartX = 0;
   let scrubStartTime = 0;
 
-  let diskVttHandles = {};
   let diskCsvHandle = null;
   let autoSaveTimeout = null;
 
   const supportsFSA = ('showSaveFilePicker' in window);
   if (!supportsFSA) {
-    btnLinkDiskFile.disabled = true;
     btnLinkCsvFile.disabled = true;
-    btnLinkDiskFile.title = "Direct disk auto-save requires Chromium browsers.";
     diskSaveStatus.textContent = "Unsupported";
   }
 
@@ -1319,14 +1251,10 @@
     audioBuffer = null;
     segments = [];
     currentActiveId = null;
-    isVttDirty = false;
 
     activeIndex = idx;
     const track = TRACKS[idx];
     currentTrackTitle = track.title;
-    vttFileName = track.vtt;
-
-    updateVttButtonState();
 
     document.querySelectorAll('.track-pill').forEach((b, i) => b.classList.toggle('active', i === idx));
     statusDiv.textContent = `Loading track "${track.title}"...`;
@@ -1340,7 +1268,7 @@
       const arrayBuf = await res.arrayBuffer();
       processAudioBuffer(arrayBuf);
     } catch (e) {
-      console.warn("Waveform decode over CORS failed, playback remains operational:", e);
+      console.warn("Waveform decode CORS note:", e);
       channelData = null;
       drawWaveform();
     }
@@ -1372,21 +1300,9 @@
     } else {
       segments = [];
       renderTranscript();
-      statusDiv.textContent = `Playing "${track.title}", but VTT transcript not found locally.`;
-      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not locate "${track.vtt}". Verify filename in admin configuration.</p>`;
+      statusDiv.textContent = `Playing "${track.title}", but VTT not found locally.`;
+      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not locate "${track.vtt}". Verify filename in settings.</p>`;
     }
-  }
-
-  function updateVttButtonState() {
-    const handle = diskVttHandles[currentTrackTitle];
-    if (handle) {
-      btnLinkDiskFile.classList.add('active-loop');
-      btnLinkDiskFile.textContent = '💾 VTT Synced';
-    } else {
-      btnLinkDiskFile.classList.remove('active-loop');
-      btnLinkDiskFile.textContent = '💾 VTT Sync';
-    }
-    updateDiskStatusText();
   }
 
   async function processAudioBuffer(arrayBuf) {
@@ -1395,7 +1311,6 @@
       audioBuffer = await audioCtx.decodeAudioData(arrayBuf);
       channelData = audioBuffer.getChannelData(0);
       sampleRate = audioBuffer.sampleRate;
-      totalAudioSeconds = audioBuffer.duration;
 
       let overallMax = 0.05;
       const step = Math.max(1, Math.floor(channelData.length / 50000));
@@ -1408,91 +1323,6 @@
     } catch(e) {
       console.error(e);
     }
-  }
-
-  function findNearestSilenceSnap(targetSec, searchRadiusSec = 0.18) {
-    if (!channelData || !magneticSnapEnabled) return targetSec;
-    const startSample = Math.max(0, Math.floor((targetSec - searchRadiusSec) * sampleRate));
-    const endSample = Math.min(channelData.length, Math.floor((targetSec + searchRadiusSec) * sampleRate));
-
-    let minAmp = Infinity;
-    let bestSample = -1;
-    const step = 8;
-
-    for (let i = startSample; i < endSample; i += step) {
-      const amp = Math.abs(channelData[i]);
-      if (amp < minAmp) {
-        minAmp = amp;
-        bestSample = i;
-      }
-    }
-
-    if (minAmp < 0.08 && bestSample !== -1) {
-      return parseFloat((bestSample / sampleRate).toFixed(3));
-    }
-    return targetSec;
-  }
-
-  btnSnapToggle.addEventListener('click', () => {
-    magneticSnapEnabled = !magneticSnapEnabled;
-    btnSnapToggle.classList.toggle('active-loop', magneticSnapEnabled);
-    btnSnapToggle.textContent = magneticSnapEnabled ? '🧲 Snap: ON' : '🧲 Snap: OFF';
-  });
-
-  function auditionInHead() {
-    const { cue } = getActiveOrClosestCue();
-    if (!cue) return;
-    playAudioSnippet(Math.max(0, cue.start - 0.3), 0.7);
-  }
-
-  function auditionOutTail() {
-    const { cue } = getActiveOrClosestCue();
-    if (!cue) return;
-    playAudioSnippet(Math.max(0, cue.end - 0.4), 0.7);
-  }
-
-  let activeAuditionSource = null;
-  function playAudioSnippet(startOffset, duration) {
-    if (!audioCtx || !audioBuffer) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    try {
-      if (activeAuditionSource) {
-        activeAuditionSource.stop();
-        activeAuditionSource.disconnect();
-      }
-      const src = audioCtx.createBufferSource();
-      src.buffer = audioBuffer;
-      src.connect(audioCtx.destination);
-      src.start(0, startOffset, duration);
-      activeAuditionSource = src;
-    } catch (e) {}
-  }
-
-  let activeScrubSource = null;
-  function playAudioScrubSnippet(timeSec) {
-    if (!audioCtx || !audioBuffer) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    try {
-      if (activeScrubSource) {
-        activeScrubSource.stop();
-        activeScrubSource.disconnect();
-        activeScrubSource = null;
-      }
-      const snippetDur = 0.07;
-      const startOffset = Math.max(0, Math.min(totalAudioSeconds - snippetDur, timeSec));
-      const src = audioCtx.createBufferSource();
-      src.buffer = audioBuffer;
-
-      const gainNode = audioCtx.createGain();
-      gainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.85, audioCtx.currentTime + 0.01);
-      gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + snippetDur);
-
-      src.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      src.start(0, startOffset, snippetDur);
-      activeScrubSource = src;
-    } catch (e) {}
   }
 
   function getActiveOrClosestCue() {
@@ -1549,7 +1379,7 @@
       ctx.fillStyle = '#334155';
       ctx.font = '12px system-ui';
       ctx.textAlign = 'center';
-      ctx.fillText('Waveform preview unavailable over CORS.', width / 2, height / 2);
+      ctx.fillText('Waveform preview loading / CORS restricted.', width / 2, height / 2);
       ctx.textAlign = 'left';
       return;
     }
@@ -1572,31 +1402,6 @@
         ctx.setLineDash([]);
       }
     });
-
-    for (let i = 0; i < segments.length - 1; i++) {
-      const cur = segments[i];
-      const next = segments[i + 1];
-
-      if (cur.end > next.start) {
-        const oStartX = Math.max(0, ((next.start - startSec) / currentWindowSpan) * width);
-        const oEndX = Math.min(width, ((cur.end - startSec) / currentWindowSpan) * width);
-        if (oEndX > oStartX) {
-          ctx.fillStyle = 'rgba(244, 63, 94, 0.35)';
-          ctx.fillRect(oStartX, 0, oEndX - oStartX, height);
-          ctx.fillStyle = '#f43f5e';
-          ctx.font = 'bold 9px monospace';
-          ctx.fillText(`⚠️ OVERLAP`, oStartX + 3, 28);
-        }
-      } else if ((next.start - cur.end) >= 1.2) {
-        const gapMid = (cur.end + next.start) / 2;
-        if (gapMid >= startSec && gapMid <= endSec) {
-          const gx = ((gapMid - startSec) / currentWindowSpan) * width;
-          ctx.fillStyle = '#f59e0b';
-          ctx.font = 'bold 9px monospace';
-          ctx.fillText(`⏸ ${(next.start - cur.end).toFixed(1)}s gap`, gx - 22, height - 26);
-        }
-      }
-    }
 
     if (activeCue) {
       const cueStartX = ((activeCue.start - startSec) / currentWindowSpan) * width;
@@ -1624,23 +1429,6 @@
         ctx.fillStyle = '#040810';
         ctx.font = 'bold 9px monospace';
         ctx.fillText(`▶ In ${formatTime(activeCue.start)}`, cueStartX + 4, 13);
-      }
-
-      if (cueEndX >= 0 && cueEndX <= width) {
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 4]);
-        ctx.beginPath();
-        ctx.moveTo(cueEndX, 0);
-        ctx.lineTo(cueEndX, height);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        ctx.fillStyle = '#ef4444';
-        ctx.fillRect(Math.max(0, cueEndX - 64), height - 18, 64, 16);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 9px monospace';
-        ctx.fillText(`■ Out ${formatTime(activeCue.end)}`, Math.max(2, cueEndX - 60), height - 6);
       }
     }
 
@@ -1718,104 +1506,26 @@
     currentActiveId = null;
   });
 
-  function checkBoundaryHit(clientX) {
-    if (!segments.length) return null;
-    const rect = waveCanvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const width = waveCanvas.offsetWidth || 1;
-    const curTime = audioPlayer.currentTime || 0;
-    const halfWindow = currentWindowSpan / 2;
-    const startSec = Math.max(0, curTime - halfWindow);
-
-    const { cue, idx } = getActiveOrClosestCue();
-    if (!cue) return null;
-
-    const startX = ((cue.start - startSec) / currentWindowSpan) * width;
-    const endX = ((cue.end - startSec) / currentWindowSpan) * width;
-
-    if (Math.abs(x - startX) <= 14) return { type: 'start', cueIdx: idx };
-    if (Math.abs(x - endX) <= 14) return { type: 'end', cueIdx: idx };
-    return null;
-  }
-
-  waveWrap.addEventListener('mousemove', (e) => {
-    if (isDraggingBoundary || isScrubbingWaveform) return;
-    const hit = checkBoundaryHit(e.clientX);
-    waveWrap.style.cursor = hit ? 'ew-resize' : 'crosshair';
-  });
-
   waveWrap.addEventListener('mousedown', (e) => {
-    const hit = checkBoundaryHit(e.clientX);
-    if (hit) {
-      isDraggingBoundary = hit.type;
-      draggedCueIndex = hit.cueIdx;
-      audioPlayer.pause();
-      return;
-    }
-
     isScrubbingWaveform = true;
     scrubStartX = e.clientX;
     scrubStartTime = audioPlayer.currentTime || 0;
-    if (audioPlayer.paused) playAudioScrubSnippet(scrubStartTime);
   });
 
   window.addEventListener('mousemove', (e) => {
+    if (!isScrubbingWaveform) return;
     const width = waveCanvas.offsetWidth || 1;
-    const curTime = audioPlayer.currentTime || 0;
-    const halfWindow = currentWindowSpan / 2;
-    const startSec = Math.max(0, curTime - halfWindow);
-
-    if (isDraggingBoundary && draggedCueIndex !== null) {
-      const rect = waveCanvas.getBoundingClientRect();
-      const mouseX = Math.max(0, Math.min(width, e.clientX - rect.left));
-      let rawSec = startSec + (mouseX / width) * currentWindowSpan;
-      const targetSec = findNearestSilenceSnap(rawSec);
-      const cue = segments[draggedCueIndex];
-
-      if (isDraggingBoundary === 'start') {
-        cue.start = Math.max(0, Math.min(cue.end - 0.08, targetSec));
-        if (draggedCueIndex > 0) {
-          const prev = segments[draggedCueIndex - 1];
-          if (prev.end > cue.start) prev.end = Math.max(prev.start + 0.08, cue.start - 0.03);
-          recalculateMetrics(prev);
-        }
-      } else if (isDraggingBoundary === 'end') {
-        cue.end = Math.max(cue.start + 0.08, targetSec);
-        if (draggedCueIndex < segments.length - 1) {
-          const next = segments[draggedCueIndex + 1];
-          if (next.start < cue.end) next.start = Math.min(next.end - 0.08, cue.end + 0.03);
-          recalculateMetrics(next);
-        }
-      }
-
-      recalculateMetrics(cue);
-      playAudioScrubSnippet(targetSec);
-      drawWaveform();
-      updateLiveSubtitleStrip();
-      return;
-    }
-
-    if (isScrubbingWaveform) {
-      const deltaX = e.clientX - scrubStartX;
-      const factor = e.shiftKey ? 0.2 : 1.0;
-      const deltaSeconds = (deltaX / width) * currentWindowSpan * factor;
-      const target = Math.max(0, Math.min(audioPlayer.duration || 999999, scrubStartTime + deltaSeconds));
-      
-      audioPlayer.currentTime = target;
-      if (audioPlayer.paused) playAudioScrubSnippet(target);
-
-      drawWaveform();
-      updateLiveSubtitleStrip();
-    }
+    const deltaX = e.clientX - scrubStartX;
+    const factor = e.shiftKey ? 0.2 : 1.0;
+    const deltaSeconds = (deltaX / width) * currentWindowSpan * factor;
+    const target = Math.max(0, Math.min(audioPlayer.duration || 999999, scrubStartTime + deltaSeconds));
+    
+    audioPlayer.currentTime = target;
+    drawWaveform();
+    updateLiveSubtitleStrip();
   });
 
   window.addEventListener('mouseup', () => {
-    if (isDraggingBoundary) {
-      isDraggingBoundary = null;
-      draggedCueIndex = null;
-      persistSessionLocal();
-      renderTranscript();
-    }
     if (isScrubbingWaveform) isScrubbingWaveform = false;
   });
 
@@ -1838,7 +1548,6 @@
 
   function nudgePlayhead(delta) {
     audioPlayer.currentTime = Math.max(0, Math.min(audioPlayer.duration || 999999, audioPlayer.currentTime + delta));
-    if (audioPlayer.paused) playAudioScrubSnippet(audioPlayer.currentTime);
     drawWaveform();
     updateLiveSubtitleStrip();
   }
@@ -1855,52 +1564,7 @@
     else statusDiv.textContent = "No cue active at current playhead.";
   }
 
-  function handleQuickSetOut() {
-    const { idx } = getActiveOrClosestCue();
-    if (idx !== null) syncSegmentEnd(idx);
-    else statusDiv.textContent = "No cue active at current playhead.";
-  }
-
   btnSetInQuick.addEventListener('click', handleQuickSetIn);
-  btnSetOutQuick.addEventListener('click', handleQuickSetOut);
-
-  function splitCueAtPlayhead() {
-    const cur = parseFloat(audioPlayer.currentTime.toFixed(3));
-    const targetIdx = segments.findIndex(s => cur > s.start + 0.2 && cur < s.end - 0.2);
-    if (targetIdx === -1) {
-      statusDiv.textContent = "Cannot split: Playhead must be inside a cue boundary.";
-      return;
-    }
-
-    const orig = segments[targetIdx];
-    const textWords = orig.text.trim().split(/\s+/);
-    const cueDur = orig.end - orig.start;
-    const splitRatio = Math.max(0.1, Math.min(0.9, (cur - orig.start) / cueDur));
-    const wordSplitIdx = Math.max(1, Math.min(textWords.length - 1, Math.round(textWords.length * splitRatio)));
-
-    const firstText = textWords.slice(0, wordSplitIdx).join(' ');
-    const secondText = textWords.slice(wordSplitIdx).join(' ');
-
-    const newSecondCue = createSegmentObj(targetIdx + 1, cur, orig.end, secondText);
-    orig.end = cur;
-    orig.text = firstText;
-
-    recalculateMetrics(orig);
-    recalculateMetrics(newSecondCue);
-
-    segments.splice(targetIdx + 1, 0, newSecondCue);
-    reindexSegments();
-
-    isVttDirty = true;
-    onCueContentChanged();
-
-    renderTranscript();
-    updateLiveSubtitleStrip();
-    drawWaveform();
-    statusDiv.textContent = `✂ Split Cue #${targetIdx + 1} at ${formatTime(cur)}.`;
-  }
-
-  btnSplitCurrent.addEventListener('click', splitCueAtPlayhead);
 
   function updateLiveSubtitleStrip() {
     if (!segments.length) return;
@@ -1971,7 +1635,6 @@
       start,
       end,
       text: clean,
-      originalText: clean,
       wpm: 0,
       cps: '0.0',
       flagged: false,
@@ -1996,48 +1659,17 @@
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }
 
-  function formatFullTime(sec, useComma = false) {
-    const safeSec = Math.max(0, sec);
-    const hrs = Math.floor(safeSec / 3600);
-    const m = Math.floor((safeSec % 3600) / 60);
-    const s = Math.floor(safeSec % 60);
-    const ms = Math.floor((safeSec % 1) * 1000);
-    const sep = useComma ? ',' : '.';
-    return `${hrs.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}${sep}${ms.toString().padStart(3, '0')}`;
-  }
-
   window.syncSegmentStart = function(idx) {
     const cur = parseFloat(audioPlayer.currentTime.toFixed(3));
     const target = segments[idx];
     if (!target || cur >= target.end - 0.08) return;
 
-    target.start = findNearestSilenceSnap(cur);
+    target.start = cur;
     if (idx > 0) {
       const prev = segments[idx - 1];
       if (prev.end > target.start) {
         prev.end = Math.max(prev.start + 0.08, target.start - 0.03);
         recalculateMetrics(prev);
-      }
-    }
-
-    recalculateMetrics(target);
-    persistSessionLocal();
-    renderTranscript();
-    updateLiveSubtitleStrip();
-    drawWaveform();
-  };
-
-  window.syncSegmentEnd = function(idx) {
-    const cur = parseFloat(audioPlayer.currentTime.toFixed(3));
-    const target = segments[idx];
-    if (!target || cur <= target.start + 0.08) return;
-
-    target.end = findNearestSilenceSnap(cur);
-    if (idx < segments.length - 1) {
-      const next = segments[idx + 1];
-      if (next.start < target.end) {
-        next.start = Math.min(next.end - 0.08, target.end + 0.03);
-        recalculateMetrics(next);
       }
     }
 
@@ -2096,28 +1728,8 @@
 
     segments.splice(idx, 1);
     reindexSegments();
-    isVttDirty = true;
-    onCueContentChanged();
 
-    renderTranscript();
-    updateLiveSubtitleStrip();
-    drawWaveform();
-  };
-
-  window.mergeWithAbove = function(idx) {
-    if (idx <= 0) return;
-    const prev = segments[idx - 1];
-    const curr = segments[idx];
-
-    prev.text = `${prev.text} ${curr.text}`.trim();
-    prev.end = Math.max(prev.end, curr.end);
-    recalculateMetrics(prev);
-
-    segments.splice(idx, 1);
-    reindexSegments();
-    isVttDirty = true;
-    onCueContentChanged();
-
+    persistSessionLocal();
     renderTranscript();
     updateLiveSubtitleStrip();
     drawWaveform();
@@ -2147,8 +1759,7 @@
     if (removedCount > 0) {
       reindexSegments();
       clearLoop();
-      isVttDirty = true;
-      onCueContentChanged();
+      persistSessionLocal();
       renderTranscript();
       updateLiveSubtitleStrip();
       drawWaveform();
@@ -2194,11 +1805,7 @@
           <button class="btn-nudge" onclick="event.stopPropagation(); window.nudgeCueStart(${idx}, -0.1)">◀ -0.1s</button>
           <button class="btn-sync" onclick="event.stopPropagation(); window.syncSegmentStart(${idx})">⏱ Set In</button>
           <button class="btn-nudge" onclick="event.stopPropagation(); window.nudgeCueStart(${idx}, 0.1)">+0.1s ▶</button>
-          <button class="btn-sync" onclick="event.stopPropagation(); window.syncSegmentEnd(${idx})">⏱ Set Out</button>
-
-          ${idx > 0 ? `<button class="btn-mini" onclick="event.stopPropagation(); window.mergeWithAbove(${idx})">🔗 Merge</button>` : ''}
-          <button class="btn-mini" onclick="event.stopPropagation(); window.splitSegmentDirect(${idx})">✂ Split</button>
-          <button class="btn-danger-sm" onclick="event.stopPropagation(); window.deleteSegment(${idx})">🗑️</button>
+          <button class="btn-danger-sm" onclick="event.stopPropagation(); window.deleteSegment(${idx})" title="Delete cue">🗑️</button>
 
           <button class="btn-ctrl" style="padding: 2px 7px; font-size: 0.72rem; margin-left: auto;" onclick="event.stopPropagation(); window.playSegment(${idx})">▶ Play</button>
           <button class="btn-ctrl ${isThisLooping ? 'active-loop' : ''}" style="padding: 2px 7px; font-size: 0.72rem;" onclick="event.stopPropagation(); window.toggleLoopSegment(${idx})">
@@ -2206,7 +1813,7 @@
           </button>
         </div>
 
-        <textarea class="seg-text-input" data-idx="${idx}">${seg.text}</textarea>
+        <div class="seg-text-display">${seg.text}</div>
 
         <div class="seg-footer">
           <button class="flag-btn ${seg.flagged ? 'is-flagged' : ''}" data-idx="${idx}">
@@ -2242,14 +1849,6 @@
         </div>
       `;
 
-      card.querySelector('.seg-text-input').addEventListener('input', (e) => {
-        seg.text = e.target.value;
-        recalculateMetrics(seg);
-        updateLiveSubtitleStrip();
-        isVttDirty = true;
-        onCueContentChanged();
-      });
-
       card.querySelector('.flag-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         seg.flagged = !seg.flagged;
@@ -2272,11 +1871,6 @@
 
     updateFilterCounts();
   }
-
-  window.splitSegmentDirect = function(idx) {
-    audioPlayer.currentTime = (segments[idx].start + segments[idx].end) / 2;
-    splitCueAtPlayhead();
-  };
 
   window.appendQuickNote = function(idx, textToAdd) {
     const seg = segments[idx];
@@ -2412,21 +2006,9 @@
     if (e.code === 'Space') {
       e.preventDefault();
       audioPlayer.paused ? audioPlayer.play() : audioPlayer.pause();
-    } else if (e.key === 'q' || e.key === 'Q') {
-      e.preventDefault();
-      auditionInHead();
-    } else if (e.key === 'e' || e.key === 'E') {
-      e.preventDefault();
-      auditionOutTail();
-    } else if (e.key === 's' || e.key === 'S') {
-      e.preventDefault();
-      splitCueAtPlayhead();
     } else if (e.key === 'i' || e.key === 'I') {
       e.preventDefault();
       handleQuickSetIn();
-    } else if (e.key === 'o' || e.key === 'O') {
-      e.preventDefault();
-      handleQuickSetOut();
     } else if (e.key === 'j' || e.key === 'J') {
       audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 5);
     } else if (e.key === 'l' || e.key === 'L') {
@@ -2465,12 +2047,6 @@
     const flagged = segments.filter(s => s.flagged).length;
     countFlagged.textContent = flagged;
     flagCounter.textContent = `${flagged} ${flagged === 1 ? 'Error' : 'Errors'} Flagged`;
-  }
-
-  function buildVTTString() {
-    return 'WEBVTT\n\n' + segments.map((s, idx) => {
-      return `${idx + 1}\n${formatFullTime(s.start, false)} --> ${formatFullTime(s.end, false)}\n${s.text}\n`;
-    }).join('\n');
   }
 
   function formatCsvCell(val) {
@@ -2517,27 +2093,6 @@
     return [headers.join(','), ...allRows].join('\n');
   }
 
-  // ==========================================================
-  // 4. CONDITIONAL AUTO-SAVE HANDLERS
-  // ==========================================================
-  async function promptAndEnsureVttDiskHandle() {
-    if (!supportsFSA) return false;
-    if (diskVttHandles[currentTrackTitle]) return true;
-
-    try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: `${currentTrackTitle.replace(/\s+/g, '_')}_corrected.vtt`,
-        types: [{ description: 'WebVTT Subtitles', accept: { 'text/vtt': ['.vtt'] } }]
-      });
-      diskVttHandles[currentTrackTitle] = handle;
-      updateVttButtonState();
-      return true;
-    } catch (err) {
-      if (err.name !== 'AbortError') console.error(err);
-      return false;
-    }
-  }
-
   async function promptAndEnsureCsvDiskHandle() {
     if (!supportsFSA) return false;
     if (diskCsvHandle) return true;
@@ -2557,12 +2112,6 @@
     }
   }
 
-  btnLinkDiskFile.addEventListener('click', async () => {
-    delete diskVttHandles[currentTrackTitle];
-    const ok = await promptAndEnsureVttDiskHandle();
-    if (ok) await flushVttToDisk();
-  });
-
   btnLinkCsvFile.addEventListener('click', async () => {
     diskCsvHandle = null;
     const ok = await promptAndEnsureCsvDiskHandle();
@@ -2570,32 +2119,11 @@
   });
 
   function updateDiskStatusText() {
-    const parts = [];
-    const vttHandle = diskVttHandles[currentTrackTitle];
-    if (vttHandle) parts.push(vttHandle.name);
-    if (diskCsvHandle) parts.push(diskCsvHandle.name);
-    if (parts.length) {
+    if (diskCsvHandle) {
       diskSaveStatus.style.color = 'var(--success)';
-      diskSaveStatus.textContent = `(${parts.join(', ')})`;
+      diskSaveStatus.textContent = `(${diskCsvHandle.name})`;
     } else {
       diskSaveStatus.textContent = '';
-    }
-  }
-
-  async function flushVttToDisk() {
-    const vttHandle = diskVttHandles[currentTrackTitle];
-    if (!vttHandle || !segments.length) return;
-    try {
-      const writable = await vttHandle.createWritable({ keepExistingData: false });
-      await writable.truncate(0);
-      await writable.write(buildVTTString());
-      await writable.close();
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      diskSaveStatus.style.color = 'var(--success)';
-      diskSaveStatus.textContent = `VTT saved ${timeStr}`;
-    } catch (err) {
-      diskSaveStatus.style.color = 'var(--danger)';
-      diskSaveStatus.textContent = "VTT write error";
     }
   }
 
@@ -2615,22 +2143,6 @@
     }
   }
 
-  function onCueContentChanged() {
-    persistSessionLocal();
-    if (!supportsFSA) return;
-    clearTimeout(autoSaveTimeout);
-    autoSaveTimeout = setTimeout(async () => {
-      if (isVttDirty) {
-        if (!diskVttHandles[currentTrackTitle]) {
-          const ok = await promptAndEnsureVttDiskHandle();
-          if (ok) await flushVttToDisk();
-        } else {
-          await flushVttToDisk();
-        }
-      }
-    }, 500);
-  }
-
   function persistSessionLocal() {
     const key = getStorageKey();
     if (!key || !segments.length) return;
@@ -2638,7 +2150,6 @@
       id: s.id,
       start: s.start,
       end: s.end,
-      text: s.text,
       flagged: s.flagged === true,
       errorType: s.errorType || 'Mispronunciation',
       note: s.note || ''
@@ -2663,7 +2174,6 @@
         if (segments[index]) {
           if (item.start !== undefined) segments[index].start = item.start;
           if (item.end !== undefined) segments[index].end = item.end;
-          segments[index].text = item.text;
           segments[index].flagged = item.flagged === true;
           segments[index].errorType = item.errorType || 'Mispronunciation';
           segments[index].note = item.note || '';
@@ -2706,17 +2216,6 @@
       txt += `----------------------------------------\n\n`;
     });
     downloadBlob(txt, `${currentTrackTitle.replace(/\s+/g, '_')}_review_notes.txt`, 'text/plain;charset=utf-8');
-  });
-
-  document.getElementById('btnExportVtt').addEventListener('click', () => {
-    downloadBlob(buildVTTString(), `${currentTrackTitle.replace(/\s+/g, '_')}_corrected.vtt`, 'text/vtt;charset=utf-8');
-  });
-
-  document.getElementById('btnExportSrt').addEventListener('click', () => {
-    let srt = segments.map((s, idx) => {
-      return `${idx + 1}\n${formatFullTime(s.start, true)} --> ${formatFullTime(s.end, true)}\n${s.text}\n`;
-    }).join('\n');
-    downloadBlob(srt, `${currentTrackTitle.replace(/\s+/g, '_')}_corrected.srt`, 'text/plain;charset=utf-8');
   });
 
   document.getElementById('btnExportCsv').addEventListener('click', () => {
