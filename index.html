@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Audio Review & QC Player</title>
+  <title>Audio Review & QC Studio</title>
   <style>
     :root {
       --bg: #0b1120;
@@ -11,6 +11,7 @@
       --border: #334155;
       --accent: #38bdf8;
       --danger: #f43f5e;
+      --warning: #f59e0b;
       --success: #10b981;
       --text: #f8fafc;
       --muted: #94a3b8;
@@ -18,7 +19,7 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 24px 16px;
+      padding: 16px;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
@@ -27,10 +28,10 @@
     }
     .container {
       width: 100%;
-      max-width: 920px;
+      max-width: 1060px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
     }
     .header-row {
       display: flex;
@@ -40,6 +41,7 @@
     }
     h2 { 
       margin: 0; 
+      font-size: 1.3rem;
       cursor: pointer; 
       user-select: none;
     }
@@ -49,7 +51,7 @@
       cursor: pointer;
       font-size: 1.15rem;
       color: var(--muted);
-      opacity: 0.5;
+      opacity: 0.6;
       padding: 4px 8px;
       border-radius: 6px;
       transition: all 0.2s ease;
@@ -63,14 +65,14 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 20px;
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 10px;
     }
     .row {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
       flex-wrap: wrap;
     }
@@ -79,10 +81,10 @@
     .track-section {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
     .track-label {
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
@@ -98,10 +100,10 @@
       background: #0f172a;
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 8px 16px;
+      padding: 6px 14px;
       border-radius: 9999px;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.82rem;
       white-space: nowrap;
       transition: all 0.15s ease;
       user-select: none;
@@ -114,16 +116,458 @@
       border-color: var(--accent);
     }
 
-    audio { width: 100%; }
-
-    #statusMessage {
-      font-size: 0.85rem;
-      color: var(--muted);
-      font-family: monospace;
-      padding: 8px 12px;
-      background: #060b13;
-      border-radius: 6px;
+    .file-box {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.78rem;
+      flex: 1;
+      min-width: 200px;
+    }
+    input[type="file"], select {
+      background: #0f172a;
       border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      outline: none;
+    }
+
+    .player-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      width: 100%;
+    }
+    audio { flex: 1; height: 36px; }
+    .player-toggles {
+      display: flex;
+      gap: 10px;
+      font-size: 0.78rem;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    /* Waveform Container */
+    .waveform-outer {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .waveform-toolbar {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      background: #070d17;
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      font-size: 0.74rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+    .waveform-wrap {
+      position: relative;
+      width: 100%;
+      height: 180px;
+      background: #060b13;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      overflow: hidden;
+      cursor: crosshair;
+      user-select: none;
+    }
+    #waveCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .wave-badge {
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      font-size: 0.68rem;
+      font-family: monospace;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Subtitle Strip with Quick Set In / Set Out Action Buttons */
+    .live-subtitle-strip {
+      background: #040810;
+      border: 1px solid var(--border);
+      border-radius: 0 0 8px 8px;
+      padding: 5px 10px;
+      min-height: 42px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      gap: 8px;
+    }
+    .live-sub-text {
+      flex: 1;
+      font-size: 0.9rem;
+      line-height: 1.25;
+      font-weight: 600;
+      color: #ffffff;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      user-select: none;
+    }
+    .live-sub-text.placeholder {
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 0.8rem;
+      font-style: italic;
+    }
+
+    .btn-set-in {
+      background: #10b981;
+      color: #040810;
+      border: 1px solid #34d399;
+      font-weight: 800;
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.25);
+    }
+    .btn-set-in:hover { background: #059669; color: #fff; }
+
+    .btn-set-out {
+      background: #ef4444;
+      color: #fff;
+      border: 1px solid #f87171;
+      font-weight: 800;
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.25);
+    }
+    .btn-set-out:hover { background: #dc2626; }
+
+    /* Single-Line Action & Auto-Save Bar */
+    .compact-action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 5px;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+      background: #090e17;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 4px 8px;
+      font-size: 0.74rem;
+      overflow-x: auto;
+    }
+    .bar-section-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      color: var(--muted);
+      user-select: none;
+      margin-right: 1px;
+    }
+    .bar-divider {
+      border-left: 1px solid var(--border);
+      height: 14px;
+      margin: 0 3px;
+      flex-shrink: 0;
+    }
+    .btn-xs {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 3px 7px;
+      font-size: 0.72rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.12s ease;
+    }
+    .btn-xs:hover:not(:disabled) {
+      background: #334155;
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .btn-xs.active-loop {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .btn-xs-danger {
+      color: #fda4af;
+      border-color: rgba(244, 63, 94, 0.35);
+      background: rgba(244, 63, 94, 0.1);
+    }
+    .btn-xs-danger:hover:not(:disabled) {
+      background: var(--danger);
+      color: #fff;
+    }
+    #diskSaveStatus {
+      font-size: 0.68rem;
+      font-family: monospace;
+      color: var(--muted);
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin: 0 2px;
+    }
+
+    /* Playback Controls Bar */
+    .playback-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: #090e17;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+    }
+    .btn-ctrl {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-ctrl:hover:not(:disabled) {
+      background: #334155;
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .btn-ctrl.active-loop {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .btn-sync {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--accent);
+      padding: 2px 7px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-sync:hover { background: var(--accent); color: #040810; }
+    .btn-nudge {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--accent);
+      padding: 2px 5px;
+      font-size: 0.68rem;
+      font-family: monospace;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-nudge:hover { background: #334155; color: #fff; }
+    .btn-danger-sm {
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      color: #fda4af;
+      padding: 2px 7px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-danger-sm:hover { background: var(--danger); color: #fff; }
+    .btn-mini {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-mini:hover { background: #334155; color: var(--accent); }
+
+    .zoom-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 70px;
+      height: 4px;
+      background: #334155;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    .zoom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
+    .speed-container {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: auto;
+      color: var(--muted);
+    }
+    .speed-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 90px;
+      height: 4px;
+      background: #334155;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    .speed-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    .speed-badge {
+      font-family: monospace;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 40px;
+      user-select: none;
+      font-size: 0.78rem;
+    }
+
+    .shortcut-legend {
+      font-size: 0.69rem;
+      color: var(--muted);
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .shortcut-legend kbd {
+      background: #090e17;
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-family: monospace;
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: nowrap;
+      background: #090e17;
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      font-size: 0.78rem;
+      overflow-x: auto;
+    }
+    .filter-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .filter-tab:hover { color: var(--text); }
+    .filter-tab.active {
+      background: #1e293b;
+      border-color: var(--border);
+      color: var(--accent);
+    }
+    #status {
+      font-size: 0.72rem;
+      color: var(--accent);
+      font-family: monospace;
+      padding: 2px 8px;
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      min-width: 120px;
+    }
+    .flag-counter {
+      margin-left: auto;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--danger);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Quick Note Direction Pills */
+    .quick-pill-container {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .btn-quick-pill {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-quick-pill:hover {
+      background: #334155;
+      color: var(--accent);
+      border-color: var(--accent);
     }
 
     /* Transcript Viewer */
@@ -131,59 +575,116 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 16px;
+      padding: 14px;
       height: 480px;
       max-height: 480px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       position: relative;
     }
     .segment {
-      padding: 12px 14px;
-      border-radius: 8px;
+      padding: 10px 12px;
+      border-radius: 7px;
       background: rgba(15, 23, 42, 0.6);
       border: 1px solid #334155;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      transition: all 0.15s ease;
+      gap: 6px;
+      transition: border-color 0.15s ease, background 0.15s ease;
     }
     .segment:hover { border-color: #64748b; }
     .segment.active {
       border-color: var(--accent);
       background: rgba(56, 189, 248, 0.08);
     }
+    .segment.looping-cue {
+      border-color: var(--success);
+      box-shadow: 0 0 0 1px var(--success);
+    }
     .segment.flagged {
       border-left: 4px solid var(--danger);
       background: rgba(244, 63, 94, 0.08);
     }
-    .seg-main {
+    .seg-header {
       display: flex;
-      gap: 12px;
-      align-items: flex-start;
+      gap: 6px;
+      align-items: center;
+      font-size: 0.76rem;
+      flex-wrap: wrap;
       cursor: pointer;
+      user-select: none;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .seg-header:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .cue-number {
+      font-weight: 700;
+      color: var(--muted);
+      font-family: monospace;
+      font-size: 0.78rem;
     }
     .time-badge {
       font-family: monospace;
       color: var(--accent);
-      font-size: 0.85rem;
-      white-space: nowrap;
+      cursor: pointer;
+      font-weight: 700;
       user-select: none;
-      padding-top: 2px;
+      padding: 1px 4px;
+      border-radius: 3px;
     }
-    .text-body { flex: 1; line-height: 1.6; }
+    .time-badge:hover {
+      background: rgba(56, 189, 248, 0.2);
+      text-decoration: underline;
+    }
+    .pace-pill {
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-family: monospace;
+      font-weight: 600;
+    }
+    .pace-fast { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
+    .pace-norm { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .pace-slow { background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4); }
 
+    .seg-text-input {
+      background: rgba(9, 13, 22, 0.5);
+      border: 1px solid transparent;
+      color: var(--text);
+      padding: 5px 7px;
+      border-radius: 5px;
+      font-family: inherit;
+      font-size: 0.86rem;
+      line-height: 1.45;
+      resize: none;
+      width: 100%;
+      min-height: 36px;
+    }
+    .seg-text-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #090d16;
+    }
+    .seg-footer {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
     .flag-btn {
       background: transparent;
       border: 1px solid var(--border);
       color: var(--muted);
-      padding: 5px 12px;
-      font-size: 0.8rem;
-      border-radius: 5px;
+      padding: 3px 7px;
+      font-size: 0.72rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 4px;
       cursor: pointer;
-      font-weight: 500;
     }
     .flag-btn.is-flagged {
       background: var(--danger);
@@ -193,8 +694,8 @@
     .comment-drawer {
       display: none;
       flex-direction: column;
-      gap: 8px;
-      padding-top: 8px;
+      gap: 6px;
+      padding-top: 6px;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
     .comment-drawer.open { display: flex; }
@@ -202,37 +703,14 @@
       background: #090d16;
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 6px 10px;
-      border-radius: 6px;
+      padding: 5px 8px;
+      border-radius: 5px;
       font-family: inherit;
-      font-size: 0.85rem;
+      font-size: 0.78rem;
     }
-    .comment-drawer textarea { resize: vertical; min-height: 48px; }
-
-    /* Export Action Bar */
-    .export-bar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-top: 1px solid var(--border);
-      padding-top: 12px;
-    }
-    .btn-export {
-      background: #059669;
-      color: #fff;
-      border: none;
-      padding: 9px 18px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-    .btn-export:hover { background: #047857; }
-    .flag-counter {
-      margin-left: auto;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--danger);
+    .comment-drawer textarea {
+      resize: vertical;
+      min-height: 38px;
     }
 
     /* Modals & Overlays */
@@ -346,17 +824,15 @@
       <button class="btn-secondary" id="btnCloseAdmin" style="padding:4px 8px;">✕</button>
     </div>
 
-    <!-- Client Passcode Setting -->
     <div style="display:flex; flex-direction:column; gap:6px;">
-      <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Client Passcode (Leave blank for NO password):</label>
+      <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Client Passcode (Leave blank for public access):</label>
       <input type="text" id="adminClientPassSetting" placeholder="e.g. client2026 (blank = public access)">
-      <span style="font-size:0.75rem; color:var(--muted);">When empty, clients can open this folder directly without entering a password.</span>
+      <span style="font-size:0.75rem; color:var(--muted);">When empty, reviewers access the portal directly without passwords.</span>
     </div>
 
-    <!-- Bulk Dropbox Links -->
     <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
       <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Dropbox Tracks & Transcripts:</label>
-      <p style="margin:0;">Paste your Dropbox links directly (one per line). Titles and VTT filenames are detected automatically:</p>
+      <p style="margin:0;">Paste Dropbox links directly (one per line). Titles and matching VTT filenames are detected automatically:</p>
       <textarea id="adminTrackInput" spellcheck="false" placeholder="https://www.dropbox.com/scl/fi/hd5rtkbnsv8zqpghybm1v/Chapter-1.mp3?rlkey=pej9w8uhcq3sn1blke08omsyh&st=rcw47ge5&dl=0&#10;https://www.dropbox.com/scl/fi/lf2grph87sg6nzu4gmxxc/Chapter-2.mp3?rlkey=2b7vpuh779mvckns2gxzz23dy&st=pb7p805x&dl=0"></textarea>
     </div>
 
@@ -367,30 +843,161 @@
   </div>
 </div>
 
-<!-- Main QC App Container -->
+<!-- Main App Container -->
 <div class="container" id="mainContainer">
   <div class="header-row">
-    <h2 id="appTitle" title="Double click or click the gear for settings">Audio Review & QC Player</h2>
+    <h2 id="appTitle" title="Double click or click the gear for settings">Audio Review & QC Studio</h2>
     <button id="btnAdminTrigger" title="Admin Settings">⚙️</button>
   </div>
 
   <div class="panel">
-    <div class="track-section">
-      <div class="row" style="justify-content: space-between;">
-        <span class="track-label">Select Chapter / Track:</span>
-        <label style="font-size: 0.85rem; user-select: none;">
-          <input type="checkbox" id="autoscrollToggle" checked> Auto-Scroll
-        </label>
-      </div>
+    <!-- Chapter / Track Selector (Cloud / Project Tracks) -->
+    <div class="track-section" id="trackSection">
+      <span class="track-label">Select Chapter / Track:</span>
       <div class="track-grid" id="trackGrid"></div>
     </div>
 
-    <audio id="audioPlayer" controls></audio>
-    <div id="statusMessage">Loading audio...</div>
+    <!-- Local File Input Alternative -->
+    <div class="row" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
+      <div class="file-box">
+        <label>Or Load Local Audio (.wav/.mp3):</label>
+        <input type="file" id="audioInput" accept="audio/*">
+      </div>
+      <div class="file-box">
+        <label>Or Load Local WebVTT (.vtt):</label>
+        <input type="file" id="vttInput" accept=".vtt">
+      </div>
+    </div>
 
-    <div class="export-bar" id="exportControls" style="display:none;">
-      <button class="btn-export" id="btnExportTxt">Export Notes (.txt)</button>
+    <!-- Filter & Combined Status Bar -->
+    <div class="filter-bar">
+      <span style="font-weight: 700; color: var(--muted); margin-right: 2px;">VIEW:</span>
+      <button class="filter-tab active" data-filter="all">All Cues (<span id="countAll">0</span>)</button>
+      <button class="filter-tab" data-filter="flagged">Flagged Only (<span id="countFlagged">0</span>)</button>
+      <select id="errorFilter" style="margin-right: 6px;">
+        <option value="">All Categories</option>
+        <option value="Mispronunciation">Mispronunciation</option>
+        <option value="Unnatural Pause / Cadence">Unnatural Pause / Cadence</option>
+        <option value="Audio Artifact / Glitch">Audio Artifact / Glitch</option>
+        <option value="Wrong Emotion / Tone">Wrong Emotion / Tone</option>
+        <option value="Dropped / Skipped Word">Dropped / Skipped Word</option>
+        <option value="Other">Other</option>
+      </select>
+      
+      <div id="status">Ready.</div>
       <span class="flag-counter" id="flagCounter">0 Errors Flagged</span>
+    </div>
+
+    <!-- Action Bar (Auto-Save & Exports) -->
+    <div class="compact-action-bar" id="compactActionBar">
+      <span class="bar-section-label">AUTO-SAVE:</span>
+      <button class="btn-xs" id="btnLinkDiskFile" style="border-color: rgba(56, 189, 248, 0.4); color: var(--accent);" title="Connect to local .VTT file for direct auto-save">
+        💾 VTT Sync
+      </button>
+      <button class="btn-xs" id="btnLinkCsvFile" style="border-color: rgba(245, 158, 11, 0.4); color: var(--warning);" title="Connect to local .CSV retake sheet for direct auto-save">
+        📋 CSV Sync
+      </button>
+
+      <span id="diskSaveStatus" title="Status of local disk sync"></span>
+
+      <span class="bar-divider"></span>
+
+      <span class="bar-section-label">EXPORTS:</span>
+      <button class="btn-xs" id="btnExportTxt" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">Notes (.txt)</button>
+      <button class="btn-xs" id="btnExportVtt">Export .VTT</button>
+      <button class="btn-xs" id="btnExportSrt">Export .SRT</button>
+      <button class="btn-xs" id="btnExportCsv">Retake Sheet (.csv)</button>
+
+      <span class="bar-divider"></span>
+
+      <button class="btn-xs btn-xs-danger" id="btnClearStorage" style="margin-left: auto;" title="Clear local cache and reload">
+        Reset Session
+      </button>
+    </div>
+
+    <!-- Waveform Canvas -->
+    <div class="waveform-outer">
+      <div class="waveform-toolbar">
+        <span style="font-weight: 600; color: var(--accent);">Zoom:</span>
+        <button class="btn-mini" id="btnZoomIn">🔍 +</button>
+        <input type="range" id="zoomWindowSlider" class="zoom-slider" min="2.5" max="30" step="0.5" value="10" title="Adjust visible time window">
+        <button class="btn-mini" id="btnZoomOut">🔍 -</button>
+        <span id="zoomWindowVal" style="font-family: monospace; color: var(--text); font-weight: 700;">10s</span>
+        <button class="btn-mini" id="btnZoomReset">Reset 10s</button>
+        
+        <span style="border-left: 1px solid var(--border); height: 14px; margin: 0 3px;"></span>
+        
+        <button class="btn-nudge" id="btnPlayheadBackFast" title="Step back 0.5s">⏪ -0.5s</button>
+        <button class="btn-nudge" id="btnPlayheadBackSlow" title="Step back 0.1s (100ms)">◀ -0.1s</button>
+        <button class="btn-nudge" id="btnPlayheadFwdSlow" title="Step forward 0.1s (100ms)">+0.1s ▶</button>
+        <button class="btn-nudge" id="btnPlayheadFwdFast" title="Step forward 0.5s">+0.5s ⏩</button>
+
+        <span style="border-left: 1px solid var(--border); height: 14px; margin: 0 3px;"></span>
+
+        <button class="btn-mini active-loop" id="btnSnapToggle" title="Magnetically snap In/Out boundary to silence dips when dragging">
+          🧲 Snap: ON
+        </button>
+
+        <span style="margin-left: auto; font-size: 0.7rem; color: var(--muted);">
+          Audition In [Q] | Audition Out [E] | Split Cue [S]
+        </span>
+      </div>
+
+      <div class="waveform-wrap" id="waveWrap">
+        <canvas id="waveCanvas"></canvas>
+        <div class="wave-badge" id="waveModeBadge">Window ±5.0s</div>
+      </div>
+
+      <!-- Live Subtitle Strip -->
+      <div class="live-subtitle-strip" id="liveSubtitleStrip">
+        <button type="button" class="btn-set-in" id="btnSetInQuick" title="Set IN boundary of active cue to current playhead [Press I]">
+          ◀ SET IN [I]
+        </button>
+        
+        <div class="live-sub-text placeholder" id="liveSubText">Load audio and VTT to begin</div>
+        
+        <button type="button" class="btn-set-out" id="btnSetOutQuick" title="Set OUT boundary of active cue to current playhead [Press O]">
+          SET OUT [O] ▶
+        </button>
+      </div>
+    </div>
+
+    <!-- Player Bar -->
+    <div class="player-row">
+      <audio id="audioPlayer" controls></audio>
+      <div class="player-toggles">
+        <label><input type="checkbox" id="autoscrollToggle" checked> Auto-Scroll</label>
+        <label><input type="checkbox" id="pitchToggle" checked> Preserve Pitch</label>
+      </div>
+    </div>
+
+    <!-- Playback Controls -->
+    <div class="playback-controls">
+      <button type="button" class="btn-ctrl" id="btnRewind5" title="Jump back 5s [J]">↺ -5s [J]</button>
+      <button type="button" class="btn-ctrl" id="btnForward5" title="Jump forward 5s [L]">+5s ↻ [L]</button>
+      <button type="button" class="btn-ctrl" id="btnLoopSentence" title="Toggle / Clear segment loop [R]">🔁 Loop Cue [R]</button>
+
+      <button type="button" class="btn-ctrl" id="btnSplitCurrent" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Split current cue at current playhead position [Press S]">
+        ✂️ Split Cue [S]
+      </button>
+
+      <div class="speed-container">
+        <label for="speedSlider">Speed [ [ / ] ]:</label>
+        <input type="range" id="speedSlider" class="speed-slider" min="0.5" max="2.0" step="0.01" value="1.0" title="Double click to reset to 1.00x">
+        <span class="speed-badge" id="speedDisplay">1.00x</span>
+      </div>
+
+      <button class="btn-mini" id="btnAutoPurgeGhosts" style="color: #fca5a5; border-color: rgba(244, 63, 94, 0.4); margin-left: 6px;" title="Scan for and automatically remove identical duplicate cues or squashed ghost blocks">
+        🧹 Clean Ghost Cues
+      </button>
+
+      <div class="shortcut-legend">
+        <span><kbd>Space</kbd> Play</span>
+        <span><kbd>Q</kbd> Head</span>
+        <span><kbd>E</kbd> Tail</span>
+        <span><kbd>S</kbd> Split</span>
+        <span><kbd>I</kbd>/<kbd>O</kbd> Set In/Out</span>
+      </div>
     </div>
   </div>
 
@@ -401,19 +1008,14 @@
 
 <script>
   // ==========================================================
-  // 1. HARDCODED MASTER ADMIN PASSWORD & PATH-SCOPING HELPER
+  // 1. PATH SCOPING & AUTHENTICATION
   // ==========================================================
   const MASTER_ADMIN_PASSWORD = "admin777";
-
-  // Normalize path to isolate different folders/repositories on the same domain
   const PATH_KEY = window.location.pathname.replace(/index\.html$/i, '');
   function getScopedKey(name) {
     return `${name}_${PATH_KEY}`;
   }
 
-  // ==========================================================
-  // 2. CLIENT AUTH LOGIC (PATH-ISOLATED)
-  // ==========================================================
   function getClientPassword() {
     return localStorage.getItem(getScopedKey('qc_client_password')) || '';
   }
@@ -426,20 +1028,12 @@
 
   function checkClientAccess() {
     const requiredPass = getClientPassword();
-    if (!requiredPass) {
+    if (!requiredPass || sessionStorage.getItem(getScopedKey('qc_authorized')) === 'true') {
       authOverlay.style.display = 'none';
       mainContainer.style.display = 'flex';
-      initPlayer();
+      initApp();
       return;
     }
-
-    if (sessionStorage.getItem(getScopedKey('qc_authorized')) === 'true') {
-      authOverlay.style.display = 'none';
-      mainContainer.style.display = 'flex';
-      initPlayer();
-      return;
-    }
-
     authOverlay.style.display = 'flex';
     mainContainer.style.display = 'none';
   }
@@ -450,7 +1044,7 @@
       sessionStorage.setItem(getScopedKey('qc_authorized'), 'true');
       authOverlay.style.display = 'none';
       mainContainer.style.display = 'flex';
-      initPlayer();
+      initApp();
     } else {
       authError.style.display = 'block';
       passInput.value = '';
@@ -464,8 +1058,23 @@
   });
 
   // ==========================================================
-  // 3. DROPBOX LINK TRANSLATOR & PATH-ISOLATED TRACK CONFIG
+  // 2. ADMIN MODAL & TRACK CONFIGURATION
   // ==========================================================
+  const adminAuthModal = document.getElementById('adminAuthModal');
+  const adminPassInput = document.getElementById('adminPassInput');
+  const btnAdminVerify = document.getElementById('btnAdminVerify');
+  const adminAuthError = document.getElementById('adminAuthError');
+  const btnCancelAdminAuth = document.getElementById('btnCancelAdminAuth');
+
+  const adminModal = document.getElementById('adminModal');
+  const btnCloseAdmin = document.getElementById('btnCloseAdmin');
+  const adminClientPassSetting = document.getElementById('adminClientPassSetting');
+  const adminTrackInput = document.getElementById('adminTrackInput');
+  const btnSaveAdminSettings = document.getElementById('btnSaveAdminSettings');
+  const btnResetDefault = document.getElementById('btnResetDefault');
+  const appTitle = document.getElementById('appTitle');
+  const btnAdminTrigger = document.getElementById('btnAdminTrigger');
+
   const DEFAULT_TRACKS = [
     { 
       title: "Chapter 1", 
@@ -489,15 +1098,12 @@
     return DEFAULT_TRACKS;
   }
 
-  // Translates ANY raw Dropbox link into a direct streaming URL
   function getDirectAudioUrl(url) {
     if (!url) return '';
     let clean = url.trim();
-
     if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
       clean = 'https://' + clean;
     }
-
     try {
       const parsed = new URL(clean);
       if (parsed.hostname.includes('dropbox.com')) {
@@ -510,9 +1116,7 @@
       clean = clean.replace('www.dropbox.com', 'dl.dropboxusercontent.com')
                    .replace('//dropbox.com', '//dl.dropboxusercontent.com');
       clean = clean.replace(/([?&])dl=[01]/, '$1raw=1');
-      if (!clean.includes('raw=1')) {
-        clean += (clean.includes('?') ? '&' : '?') + 'raw=1';
-      }
+      if (!clean.includes('raw=1')) clean += (clean.includes('?') ? '&' : '?') + 'raw=1';
       return clean;
     }
     return clean;
@@ -522,31 +1126,12 @@
     try {
       const parsed = new URL(url.startsWith('http') ? url : 'https://' + url);
       const segments = parsed.pathname.split('/').filter(Boolean);
-      const last = segments[segments.length - 1] || '';
-      return decodeURIComponent(last);
+      return decodeURIComponent(segments[segments.length - 1] || '');
     } catch(e) {
       const match = url.match(/\/([^\/?#]+)[?#]?/);
       return match ? decodeURIComponent(match[1]) : '';
     }
   }
-
-  // ==========================================================
-  // 4. SECRET ADMIN MODAL LOGIC (Gear / Double Click / Hotkey / ?admin)
-  // ==========================================================
-  const adminAuthModal = document.getElementById('adminAuthModal');
-  const adminPassInput = document.getElementById('adminPassInput');
-  const btnAdminVerify = document.getElementById('btnAdminVerify');
-  const adminAuthError = document.getElementById('adminAuthError');
-  const btnCancelAdminAuth = document.getElementById('btnCancelAdminAuth');
-
-  const adminModal = document.getElementById('adminModal');
-  const btnCloseAdmin = document.getElementById('btnCloseAdmin');
-  const adminClientPassSetting = document.getElementById('adminClientPassSetting');
-  const adminTrackInput = document.getElementById('adminTrackInput');
-  const btnSaveAdminSettings = document.getElementById('btnSaveAdminSettings');
-  const btnResetDefault = document.getElementById('btnResetDefault');
-  const appTitle = document.getElementById('appTitle');
-  const btnAdminTrigger = document.getElementById('btnAdminTrigger');
 
   function openAdminChallenge() {
     adminAuthError.style.display = 'none';
@@ -570,14 +1155,8 @@
   adminPassInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') verifyAdminLogin();
   });
-  btnCancelAdminAuth.addEventListener('click', () => {
-    adminAuthModal.style.display = 'none';
-  });
-
-  btnAdminTrigger.addEventListener('click', (e) => {
-    e.preventDefault();
-    openAdminChallenge();
-  });
+  btnCancelAdminAuth.addEventListener('click', () => { adminAuthModal.style.display = 'none'; });
+  btnAdminTrigger.addEventListener('click', (e) => { e.preventDefault(); openAdminChallenge(); });
 
   let titleClicks = 0;
   let clickTimer = null;
@@ -610,14 +1189,9 @@
     adminModal.style.display = 'flex';
   }
 
-  function closeAdminPanel() {
-    adminModal.style.display = 'none';
-  }
-
-  btnCloseAdmin.addEventListener('click', closeAdminPanel);
+  btnCloseAdmin.addEventListener('click', () => { adminModal.style.display = 'none'; });
 
   btnSaveAdminSettings.addEventListener('click', () => {
-    // 1. Save or clear client password for this specific path
     const newClientPass = adminClientPassSetting.value.trim();
     if (newClientPass) {
       localStorage.setItem(getScopedKey('qc_client_password'), newClientPass);
@@ -625,7 +1199,6 @@
       localStorage.removeItem(getScopedKey('qc_client_password'));
     }
 
-    // 2. Parse lines (supports bare Dropbox URLs OR Title | URL | VTT)
     const rawLines = adminTrackInput.value.trim().split('\n').map(l => l.trim()).filter(Boolean);
     const newTracks = [];
 
@@ -651,43 +1224,112 @@
       localStorage.setItem(getScopedKey('qc_custom_tracks'), JSON.stringify(TRACKS));
     }
 
-    closeAdminPanel();
-    alert(`Saved ${newTracks.length} tracks successfully for this path!`);
-    checkClientAccess();
+    adminModal.style.display = 'none';
+    alert(`Saved ${newTracks.length} tracks successfully!`);
     renderTrackGrid();
     loadTrack(0);
   });
 
   btnResetDefault.addEventListener('click', () => {
-    if (confirm('Reset to default chapters and remove client passcode for this path?')) {
+    if (confirm('Reset to default chapters and clear passcode?')) {
       localStorage.removeItem(getScopedKey('qc_custom_tracks'));
       localStorage.removeItem(getScopedKey('qc_client_password'));
       TRACKS = DEFAULT_TRACKS;
-      closeAdminPanel();
-      checkClientAccess();
+      adminModal.style.display = 'none';
       renderTrackGrid();
       loadTrack(0);
     }
   });
 
   // ==========================================================
-  // 5. QC PLAYER ENGINE
+  // 3. CORE QC & WAVEFORM ENGINE
   // ==========================================================
-  const trackGrid = document.getElementById('trackGrid');
+  const audioInput = document.getElementById('audioInput');
+  const vttInput = document.getElementById('vttInput');
   const audioPlayer = document.getElementById('audioPlayer');
-  const transcriptDiv = document.getElementById('transcript');
-  const statusMessage = document.getElementById('statusMessage');
-  const exportControls = document.getElementById('exportControls');
-  const flagCounter = document.getElementById('flagCounter');
-  const autoscrollToggle = document.getElementById('autoscrollToggle');
+  const waveCanvas = document.getElementById('waveCanvas');
+  const waveWrap = document.getElementById('waveWrap');
+  const waveModeBadge = document.getElementById('waveModeBadge');
+  const liveSubText = document.getElementById('liveSubText');
+  const trackGrid = document.getElementById('trackGrid');
 
+  const btnSetInQuick = document.getElementById('btnSetInQuick');
+  const btnSetOutQuick = document.getElementById('btnSetOutQuick');
+  const btnSnapToggle = document.getElementById('btnSnapToggle');
+  const btnSplitCurrent = document.getElementById('btnSplitCurrent');
+
+  const zoomWindowSlider = document.getElementById('zoomWindowSlider');
+  const zoomWindowVal = document.getElementById('zoomWindowVal');
+  const btnZoomIn = document.getElementById('btnZoomIn');
+  const btnZoomOut = document.getElementById('btnZoomOut');
+  const btnZoomReset = document.getElementById('btnZoomReset');
+  const btnAutoPurgeGhosts = document.getElementById('btnAutoPurgeGhosts');
+
+  const btnPlayheadBackFast = document.getElementById('btnPlayheadBackFast');
+  const btnPlayheadBackSlow = document.getElementById('btnPlayheadBackSlow');
+  const btnPlayheadFwdSlow = document.getElementById('btnPlayheadFwdSlow');
+  const btnPlayheadFwdFast = document.getElementById('btnPlayheadFwdFast');
+
+  const transcriptDiv = document.getElementById('transcript');
+  const statusDiv = document.getElementById('status');
+  const autoscrollToggle = document.getElementById('autoscrollToggle');
+  const pitchToggle = document.getElementById('pitchToggle');
+  const flagCounter = document.getElementById('flagCounter');
+  const countAll = document.getElementById('countAll');
+  const countFlagged = document.getElementById('countFlagged');
+
+  const btnRewind5 = document.getElementById('btnRewind5');
+  const btnForward5 = document.getElementById('btnForward5');
+  const btnLoopSentence = document.getElementById('btnLoopSentence');
+  const speedSlider = document.getElementById('speedSlider');
+  const speedDisplay = document.getElementById('speedDisplay');
+  const errorFilter = document.getElementById('errorFilter');
+  const btnClearStorage = document.getElementById('btnClearStorage');
+
+  const btnLinkDiskFile = document.getElementById('btnLinkDiskFile');
+  const btnLinkCsvFile = document.getElementById('btnLinkCsvFile');
+  const diskSaveStatus = document.getElementById('diskSaveStatus');
+
+  let currentTrackTitle = "Chapter 1";
+  let vttFileName = "Chapter 1.vtt";
   let activeIndex = -1;
   let segments = [];
   let currentActiveId = null;
+  let activeFilter = 'all';
+  let loopingSegmentIndex = null;
 
-  function initPlayer() {
+  let audioCtx = null;
+  let audioBuffer = null;
+  let channelData = null;
+  let sampleRate = 44100;
+  let totalAudioSeconds = 0;
+  let animFrameId = null;
+
+  let currentWindowSpan = 10.0;
+  let magneticSnapEnabled = true;
+  let globalPeakScaleFactor = 1.0;
+
+  let isScrubbingWaveform = false;
+  let isDraggingBoundary = null;
+  let draggedCueIndex = null;
+  let scrubStartX = 0;
+  let scrubStartTime = 0;
+
+  let diskVttHandle = null;
+  let diskCsvHandle = null;
+  let autoSaveTimeout = null;
+
+  const supportsFSA = ('showSaveFilePicker' in window);
+  if (!supportsFSA) {
+    btnLinkDiskFile.disabled = true;
+    btnLinkCsvFile.disabled = true;
+    btnLinkDiskFile.title = "Direct disk auto-save requires Chromium browsers.";
+    diskSaveStatus.textContent = "Unsupported";
+  }
+
+  function initApp() {
     renderTrackGrid();
-    loadTrack(0);
+    if (TRACKS.length > 0) loadTrack(0);
   }
 
   function renderTrackGrid() {
@@ -706,12 +1348,29 @@
   async function loadTrack(idx) {
     activeIndex = idx;
     const track = TRACKS[idx];
+    currentTrackTitle = track.title;
+    vttFileName = track.vtt;
+
     document.querySelectorAll('.track-pill').forEach((b, i) => b.classList.toggle('active', i === idx));
+    statusDiv.textContent = `Loading track "${track.title}"...`;
 
-    audioPlayer.src = getDirectAudioUrl(track.audio);
+    const directUrl = getDirectAudioUrl(track.audio);
+    audioPlayer.src = directUrl;
     currentActiveId = null;
-    statusMessage.textContent = `Streaming "${track.title}" from Dropbox...`;
 
+    // Decode audio waveform via fetch
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const res = await fetch(directUrl);
+      const arrayBuf = await res.arrayBuffer();
+      processAudioBuffer(arrayBuf);
+    } catch (e) {
+      console.warn("Waveform decode over CORS failed, standard playback remains operational:", e);
+      channelData = null;
+      drawWaveform();
+    }
+
+    // Attempt to load associated VTT
     let vttCandidates = [
       track.vtt,
       track.vtt.replace(/[-_]/g, ' '),
@@ -720,7 +1379,6 @@
     vttCandidates = [...new Set(vttCandidates)];
 
     let loadedVttText = null;
-
     for (const cand of vttCandidates) {
       try {
         const res = await fetch(cand);
@@ -732,37 +1390,602 @@
     }
 
     if (loadedVttText) {
-      parseVTT(loadedVttText);
+      parseWebVTT(loadedVttText);
+      loadSession();
       renderTranscript();
-      exportControls.style.display = 'flex';
-      statusMessage.textContent = `Ready: "${track.title}". Click any line to listen, or flag issues.`;
+      updateLiveSubtitleStrip();
+      statusDiv.textContent = `Ready: "${track.title}" (${segments.length} cues)`;
     } else {
-      statusMessage.textContent = `Playing "${track.title}", but transcript could not be loaded.`;
-      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not find "${track.vtt}". Make sure it is in your project directory.</p>`;
-      exportControls.style.display = 'none';
+      segments = [];
+      renderTranscript();
+      statusDiv.textContent = `Playing "${track.title}", but VTT transcript not found locally.`;
+      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not locate "${track.vtt}". Upload manually above or place in folder.</p>`;
     }
   }
 
-  function parseVTT(text) {
-    const lines = text.replace(/\r/g, '').split('\n');
+  async function processAudioBuffer(arrayBuf) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioBuffer = await audioCtx.decodeAudioData(arrayBuf);
+      channelData = audioBuffer.getChannelData(0);
+      sampleRate = audioBuffer.sampleRate;
+      totalAudioSeconds = audioBuffer.duration;
+
+      let overallMax = 0.05;
+      const step = Math.max(1, Math.floor(channelData.length / 50000));
+      for (let i = 0; i < channelData.length; i += step) {
+        const val = Math.abs(channelData[i]);
+        if (val > overallMax) overallMax = val;
+      }
+      globalPeakScaleFactor = Math.min(4.5, (0.88 / overallMax));
+      drawWaveform();
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  // Local File Upload Handlers
+  audioInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    currentTrackTitle = file.name.replace(/\.[^/.]+$/, '');
+    activeIndex = -1;
+    document.querySelectorAll('.track-pill').forEach(b => b.classList.remove('active'));
+
+    audioPlayer.src = URL.createObjectURL(file);
+    statusDiv.textContent = `Decoding waveform for ${file.name}...`;
+
+    try {
+      const arrayBuf = await file.arrayBuffer();
+      await processAudioBuffer(arrayBuf);
+      loadSession();
+      statusDiv.textContent = `Loaded audio: "${file.name}"`;
+    } catch(err) {
+      statusDiv.textContent = `Waveform error: ${err.message}`;
+    }
+  });
+
+  vttInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    vttFileName = file.name;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      parseWebVTT(evt.target.result);
+      loadSession();
+      renderTranscript();
+      updateLiveSubtitleStrip();
+      statusDiv.textContent = `Loaded VTT: "${file.name}" (${segments.length} cues)`;
+    };
+    reader.readAsText(file);
+  });
+
+  // Waveform Magnetic Snapping
+  function findNearestSilenceSnap(targetSec, searchRadiusSec = 0.18) {
+    if (!channelData || !magneticSnapEnabled) return targetSec;
+    const startSample = Math.max(0, Math.floor((targetSec - searchRadiusSec) * sampleRate));
+    const endSample = Math.min(channelData.length, Math.floor((targetSec + searchRadiusSec) * sampleRate));
+
+    let minAmp = Infinity;
+    let bestSample = -1;
+    const step = 8;
+
+    for (let i = startSample; i < endSample; i += step) {
+      const amp = Math.abs(channelData[i]);
+      if (amp < minAmp) {
+        minAmp = amp;
+        bestSample = i;
+      }
+    }
+
+    if (minAmp < 0.08 && bestSample !== -1) {
+      return parseFloat((bestSample / sampleRate).toFixed(3));
+    }
+    return targetSec;
+  }
+
+  btnSnapToggle.addEventListener('click', () => {
+    magneticSnapEnabled = !magneticSnapEnabled;
+    btnSnapToggle.classList.toggle('active-loop', magneticSnapEnabled);
+    btnSnapToggle.textContent = magneticSnapEnabled ? '🧲 Snap: ON' : '🧲 Snap: OFF';
+  });
+
+  function auditionInHead() {
+    const { cue } = getActiveOrClosestCue();
+    if (!cue) return;
+    playAudioSnippet(Math.max(0, cue.start - 0.3), 0.7);
+  }
+
+  function auditionOutTail() {
+    const { cue } = getActiveOrClosestCue();
+    if (!cue) return;
+    playAudioSnippet(Math.max(0, cue.end - 0.4), 0.7);
+  }
+
+  let activeAuditionSource = null;
+  function playAudioSnippet(startOffset, duration) {
+    if (!audioCtx || !audioBuffer) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    try {
+      if (activeAuditionSource) {
+        activeAuditionSource.stop();
+        activeAuditionSource.disconnect();
+      }
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioBuffer;
+      src.connect(audioCtx.destination);
+      src.start(0, startOffset, duration);
+      activeAuditionSource = src;
+    } catch (e) {}
+  }
+
+  let activeScrubSource = null;
+  function playAudioScrubSnippet(timeSec) {
+    if (!audioCtx || !audioBuffer) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    try {
+      if (activeScrubSource) {
+        activeScrubSource.stop();
+        activeScrubSource.disconnect();
+        activeScrubSource = null;
+      }
+      const snippetDur = 0.07;
+      const startOffset = Math.max(0, Math.min(totalAudioSeconds - snippetDur, timeSec));
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioBuffer;
+
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.85, audioCtx.currentTime + 0.01);
+      gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + snippetDur);
+
+      src.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      src.start(0, startOffset, snippetDur);
+      activeScrubSource = src;
+    } catch (e) {}
+  }
+
+  function getActiveOrClosestCue() {
+    const curTime = audioPlayer.currentTime || 0;
+    if (loopingSegmentIndex !== null && segments[loopingSegmentIndex]) {
+      return { cue: segments[loopingSegmentIndex], idx: loopingSegmentIndex };
+    }
+    const idx = segments.findIndex(s => curTime >= s.start && curTime < s.end);
+    if (idx !== -1) return { cue: segments[idx], idx };
+
+    const half = currentWindowSpan / 2;
+    const startSec = Math.max(0, curTime - half);
+    const endSec = startSec + currentWindowSpan;
+    let minDiff = Infinity, best = null, bestIdx = null;
+
+    segments.forEach((s, i) => {
+      const dist = Math.min(Math.abs(curTime - s.start), Math.abs(curTime - s.end));
+      if (dist < minDiff && (s.end >= startSec && s.start <= endSec)) {
+        minDiff = dist;
+        best = s;
+        bestIdx = i;
+      }
+    });
+
+    return best ? { cue: best, idx: bestIdx } : { cue: null, idx: null };
+  }
+
+  function drawWaveform() {
+    const canvas = waveCanvas;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width = canvas.offsetWidth;
+    const height = canvas.height = canvas.offsetHeight;
+    const amp = height / 2;
+
+    const curTime = audioPlayer.currentTime || 0;
+    const halfWindow = currentWindowSpan / 2;
+    const startSec = Math.max(0, curTime - halfWindow);
+    const endSec = startSec + currentWindowSpan;
+
+    waveModeBadge.textContent = `Window ±${halfWindow.toFixed(1)}s`;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#060b13';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, amp);
+    ctx.lineTo(width, amp);
+    ctx.stroke();
+
+    if (!channelData) {
+      ctx.fillStyle = '#334155';
+      ctx.font = '12px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('Waveform preview available when loaded locally or over CORS.', width / 2, height / 2);
+      ctx.textAlign = 'left';
+      return;
+    }
+
+    const { cue: activeCue } = getActiveOrClosestCue();
+
+    segments.forEach((s) => {
+      if (s.end < startSec || s.start > endSec) return;
+      if (activeCue && activeCue.id === s.id) return;
+
+      const cStartX = ((s.start - startSec) / currentWindowSpan) * width;
+      if (cStartX >= 0 && cStartX <= width) {
+        ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cStartX, 0);
+        ctx.lineTo(cStartX, height);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    });
+
+    for (let i = 0; i < segments.length - 1; i++) {
+      const cur = segments[i];
+      const next = segments[i + 1];
+
+      if (cur.end > next.start) {
+        const oStartX = Math.max(0, ((next.start - startSec) / currentWindowSpan) * width);
+        const oEndX = Math.min(width, ((cur.end - startSec) / currentWindowSpan) * width);
+        if (oEndX > oStartX) {
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.35)';
+          ctx.fillRect(oStartX, 0, oEndX - oStartX, height);
+          ctx.fillStyle = '#f43f5e';
+          ctx.font = 'bold 9px monospace';
+          ctx.fillText(`⚠️ OVERLAP`, oStartX + 3, 28);
+        }
+      } else if ((next.start - cur.end) >= 1.2) {
+        const gapMid = (cur.end + next.start) / 2;
+        if (gapMid >= startSec && gapMid <= endSec) {
+          const gx = ((gapMid - startSec) / currentWindowSpan) * width;
+          ctx.fillStyle = '#f59e0b';
+          ctx.font = 'bold 9px monospace';
+          ctx.fillText(`⏸ ${(next.start - cur.end).toFixed(1)}s gap`, gx - 22, height - 26);
+        }
+      }
+    }
+
+    if (activeCue) {
+      const cueStartX = ((activeCue.start - startSec) / currentWindowSpan) * width;
+      const cueEndX = ((activeCue.end - startSec) / currentWindowSpan) * width;
+
+      const boxLeft = Math.max(0, cueStartX);
+      const boxRight = Math.min(width, cueEndX);
+      if (boxRight > boxLeft) {
+        ctx.fillStyle = (loopingSegmentIndex !== null) ? 'rgba(16, 185, 129, 0.16)' : 'rgba(56, 189, 248, 0.13)';
+        ctx.fillRect(boxLeft, 0, boxRight - boxLeft, height);
+      }
+
+      if (cueStartX >= 0 && cueStartX <= width) {
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cueStartX, 0);
+        ctx.lineTo(cueStartX, height);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(cueStartX, 2, 60, 16);
+        ctx.fillStyle = '#040810';
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText(`▶ In ${formatTime(activeCue.start)}`, cueStartX + 4, 13);
+      }
+
+      if (cueEndX >= 0 && cueEndX <= width) {
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cueEndX, 0);
+        ctx.lineTo(cueEndX, height);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(Math.max(0, cueEndX - 64), height - 18, 64, 16);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText(`■ Out ${formatTime(activeCue.end)}`, Math.max(2, cueEndX - 60), height - 6);
+      }
+    }
+
+    ctx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
+    ctx.lineWidth = 1;
+    const firstTick = Math.ceil(startSec);
+    for (let sec = firstTick; sec < endSec; sec++) {
+      const xPos = ((sec - startSec) / currentWindowSpan) * width;
+      ctx.beginPath();
+      ctx.moveTo(xPos, 0);
+      ctx.lineTo(xPos, height);
+      ctx.stroke();
+    }
+
+    const startIdx = Math.floor(startSec * sampleRate);
+    const endIdx = Math.min(channelData.length, Math.floor(endSec * sampleRate));
+    const samplesInView = endIdx - startIdx;
+    const step = Math.max(1, Math.floor(samplesInView / width));
+
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+
+    for (let x = 0; x < width; x++) {
+      const chunkStart = startIdx + (x * step);
+      if (chunkStart >= channelData.length) break;
+
+      let min = 1.0, max = -1.0;
+      for (let j = 0; j < step; j++) {
+        const idx = chunkStart + j;
+        if (idx >= channelData.length) break;
+        const val = channelData[idx];
+        if (val < min) min = val;
+        if (val > max) max = val;
+      }
+
+      if (max >= min) {
+        const scaledMin = Math.max(-0.95, min * globalPeakScaleFactor);
+        const scaledMax = Math.min(0.95, max * globalPeakScaleFactor);
+        ctx.moveTo(x, Math.max(3, amp - (scaledMax * amp)));
+        ctx.lineTo(x, Math.min(height - 3, amp - (scaledMin * amp)));
+      }
+    }
+    ctx.stroke();
+
+    const playheadX = ((curTime - startSec) / currentWindowSpan) * width;
+    ctx.strokeStyle = '#f43f5e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(playheadX, 0);
+    ctx.lineTo(playheadX, height);
+    ctx.stroke();
+  }
+
+  function loopWaveformAnimation() {
+    drawWaveform();
+    if (!audioPlayer.paused && !audioPlayer.ended) {
+      animFrameId = requestAnimationFrame(loopWaveformAnimation);
+    }
+  }
+
+  audioPlayer.addEventListener('play', () => {
+    cancelAnimationFrame(animFrameId);
+    animFrameId = requestAnimationFrame(loopWaveformAnimation);
+  });
+
+  audioPlayer.addEventListener('pause', () => {
+    cancelAnimationFrame(animFrameId);
+    drawWaveform();
+  });
+
+  audioPlayer.addEventListener('seeked', () => {
+    drawWaveform();
+    updateLiveSubtitleStrip();
+    currentActiveId = null;
+  });
+
+  function checkBoundaryHit(clientX) {
+    if (!segments.length) return null;
+    const rect = waveCanvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const width = waveCanvas.offsetWidth || 1;
+    const curTime = audioPlayer.currentTime || 0;
+    const halfWindow = currentWindowSpan / 2;
+    const startSec = Math.max(0, curTime - halfWindow);
+
+    const { cue, idx } = getActiveOrClosestCue();
+    if (!cue) return null;
+
+    const startX = ((cue.start - startSec) / currentWindowSpan) * width;
+    const endX = ((cue.end - startSec) / currentWindowSpan) * width;
+
+    if (Math.abs(x - startX) <= 14) return { type: 'start', cueIdx: idx };
+    if (Math.abs(x - endX) <= 14) return { type: 'end', cueIdx: idx };
+    return null;
+  }
+
+  waveWrap.addEventListener('mousemove', (e) => {
+    if (isDraggingBoundary || isScrubbingWaveform) return;
+    const hit = checkBoundaryHit(e.clientX);
+    waveWrap.style.cursor = hit ? 'ew-resize' : 'crosshair';
+  });
+
+  waveWrap.addEventListener('mousedown', (e) => {
+    const hit = checkBoundaryHit(e.clientX);
+    if (hit) {
+      isDraggingBoundary = hit.type;
+      draggedCueIndex = hit.cueIdx;
+      audioPlayer.pause();
+      return;
+    }
+
+    isScrubbingWaveform = true;
+    scrubStartX = e.clientX;
+    scrubStartTime = audioPlayer.currentTime || 0;
+    if (audioPlayer.paused) playAudioScrubSnippet(scrubStartTime);
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    const width = waveCanvas.offsetWidth || 1;
+    const curTime = audioPlayer.currentTime || 0;
+    const halfWindow = currentWindowSpan / 2;
+    const startSec = Math.max(0, curTime - halfWindow);
+
+    if (isDraggingBoundary && draggedCueIndex !== null) {
+      const rect = waveCanvas.getBoundingClientRect();
+      const mouseX = Math.max(0, Math.min(width, e.clientX - rect.left));
+      let rawSec = startSec + (mouseX / width) * currentWindowSpan;
+      const targetSec = findNearestSilenceSnap(rawSec);
+      const cue = segments[draggedCueIndex];
+
+      if (isDraggingBoundary === 'start') {
+        cue.start = Math.max(0, Math.min(cue.end - 0.08, targetSec));
+        if (draggedCueIndex > 0) {
+          const prev = segments[draggedCueIndex - 1];
+          if (prev.end > cue.start) prev.end = Math.max(prev.start + 0.08, cue.start - 0.03);
+          recalculateMetrics(prev);
+        }
+      } else if (isDraggingBoundary === 'end') {
+        cue.end = Math.max(cue.start + 0.08, targetSec);
+        if (draggedCueIndex < segments.length - 1) {
+          const next = segments[draggedCueIndex + 1];
+          if (next.start < cue.end) next.start = Math.min(next.end - 0.08, cue.end + 0.03);
+          recalculateMetrics(next);
+        }
+      }
+
+      recalculateMetrics(cue);
+      playAudioScrubSnippet(targetSec);
+      drawWaveform();
+      updateLiveSubtitleStrip();
+      return;
+    }
+
+    if (isScrubbingWaveform) {
+      const deltaX = e.clientX - scrubStartX;
+      const factor = e.shiftKey ? 0.2 : 1.0;
+      const deltaSeconds = (deltaX / width) * currentWindowSpan * factor;
+      const target = Math.max(0, Math.min(audioPlayer.duration || 999999, scrubStartTime + deltaSeconds));
+      
+      audioPlayer.currentTime = target;
+      if (audioPlayer.paused) playAudioScrubSnippet(target);
+
+      drawWaveform();
+      updateLiveSubtitleStrip();
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isDraggingBoundary) {
+      isDraggingBoundary = null;
+      draggedCueIndex = null;
+      persistSession();
+      renderTranscript();
+    }
+    if (isScrubbingWaveform) isScrubbingWaveform = false;
+  });
+
+  waveWrap.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    setWaveformZoom(currentWindowSpan + (e.deltaY < 0 ? -1.0 : 1.0));
+  }, { passive: false });
+
+  function setWaveformZoom(val) {
+    currentWindowSpan = Math.max(2.5, Math.min(30.0, parseFloat(val)));
+    zoomWindowSlider.value = currentWindowSpan;
+    zoomWindowVal.textContent = `${currentWindowSpan.toFixed(1)}s`;
+    drawWaveform();
+  }
+
+  zoomWindowSlider.addEventListener('input', (e) => setWaveformZoom(e.target.value));
+  btnZoomIn.addEventListener('click', () => setWaveformZoom(currentWindowSpan - 1.5));
+  btnZoomOut.addEventListener('click', () => setWaveformZoom(currentWindowSpan + 1.5));
+  btnZoomReset.addEventListener('click', () => setWaveformZoom(10.0));
+
+  function nudgePlayhead(delta) {
+    audioPlayer.currentTime = Math.max(0, Math.min(audioPlayer.duration || 999999, audioPlayer.currentTime + delta));
+    if (audioPlayer.paused) playAudioScrubSnippet(audioPlayer.currentTime);
+    drawWaveform();
+    updateLiveSubtitleStrip();
+  }
+
+  btnPlayheadBackFast.addEventListener('click', () => nudgePlayhead(-0.5));
+  btnPlayheadBackSlow.addEventListener('click', () => nudgePlayhead(-0.1));
+  btnPlayheadFwdSlow.addEventListener('click', () => nudgePlayhead(0.1));
+  btnPlayheadFwdFast.addEventListener('click', () => nudgePlayhead(0.5));
+  window.addEventListener('resize', () => drawWaveform());
+
+  function handleQuickSetIn() {
+    const { idx } = getActiveOrClosestCue();
+    if (idx !== null) syncSegmentStart(idx);
+    else statusDiv.textContent = "No cue active at the current playhead.";
+  }
+
+  function handleQuickSetOut() {
+    const { idx } = getActiveOrClosestCue();
+    if (idx !== null) syncSegmentEnd(idx);
+    else statusDiv.textContent = "No cue active at the current playhead.";
+  }
+
+  btnSetInQuick.addEventListener('click', handleQuickSetIn);
+  btnSetOutQuick.addEventListener('click', handleQuickSetOut);
+
+  function splitCueAtPlayhead() {
+    const cur = parseFloat(audioPlayer.currentTime.toFixed(3));
+    const targetIdx = segments.findIndex(s => cur > s.start + 0.2 && cur < s.end - 0.2);
+    if (targetIdx === -1) {
+      statusDiv.textContent = "Cannot split: Playhead must be inside a cue boundary.";
+      return;
+    }
+
+    const orig = segments[targetIdx];
+    const textWords = orig.text.trim().split(/\s+/);
+    const cueDur = orig.end - orig.start;
+    const splitRatio = Math.max(0.1, Math.min(0.9, (cur - orig.start) / cueDur));
+    const wordSplitIdx = Math.max(1, Math.min(textWords.length - 1, Math.round(textWords.length * splitRatio)));
+
+    const firstText = textWords.slice(0, wordSplitIdx).join(' ');
+    const secondText = textWords.slice(wordSplitIdx).join(' ');
+
+    const newSecondCue = createSegmentObj(targetIdx + 1, cur, orig.end, secondText);
+    orig.end = cur;
+    orig.text = firstText;
+
+    recalculateMetrics(orig);
+    recalculateMetrics(newSecondCue);
+
+    segments.splice(targetIdx + 1, 0, newSecondCue);
+    reindexSegments();
+
+    persistSession();
+    renderTranscript();
+    updateLiveSubtitleStrip();
+    drawWaveform();
+    statusDiv.textContent = `✂️ Split Cue #${targetIdx + 1} at ${formatTime(cur)}.`;
+  }
+
+  btnSplitCurrent.addEventListener('click', splitCueAtPlayhead);
+
+  function updateLiveSubtitleStrip() {
+    if (!segments.length) return;
+    const cur = audioPlayer.currentTime;
+    let activeIdx = null;
+
+    for (let i = 0; i < segments.length; i++) {
+      if (cur >= segments[i].start && cur < segments[i].end) {
+        activeIdx = i;
+        break;
+      }
+    }
+
+    if (activeIdx !== null) {
+      liveSubText.textContent = segments[activeIdx].text;
+      liveSubText.classList.remove('placeholder');
+    } else {
+      let upcoming = segments.find(s => s.start > cur);
+      liveSubText.textContent = upcoming ? `"${upcoming.text}"` : '...';
+      liveSubText.classList.add('placeholder');
+    }
+  }
+
+  function parseWebVTT(vttText) {
+    const lines = vttText.replace(/\r/g, '').split('\n');
     segments = [];
     const timeRegex = /((\d{2}:)?\d{2}:\d{2}\.\d{3})\s*-->\s*((\d{2}:)?\d{2}:\d{2}\.\d{3})/;
 
     let curStart = null, curEnd = null, curText = [];
 
-    lines.forEach(line => {
+    lines.forEach((line) => {
       const match = line.match(timeRegex);
       if (match) {
         if (curStart !== null && curText.length > 0) {
-          segments.push({
-            id: segments.length + 1,
-            start: curStart,
-            end: curEnd,
-            text: curText.join(' ').trim(),
-            flagged: false,
-            errorType: 'Mispronunciation',
-            note: ''
-          });
+          segments.push(createSegmentObj(segments.length, curStart, curEnd, curText.join(' ')));
           curText = [];
         }
         curStart = parseSeconds(match[1]);
@@ -776,21 +1999,44 @@
     });
 
     if (curStart !== null && curText.length > 0) {
-      segments.push({
-        id: segments.length + 1,
-        start: curStart,
-        end: curEnd,
-        text: curText.join(' ').trim(),
-        flagged: false,
-        errorType: 'Mispronunciation',
-        note: ''
-      });
+      segments.push(createSegmentObj(segments.length, curStart, curEnd, curText.join(' ')));
     }
   }
 
-  function parseSeconds(str) {
-    const parts = str.split(':');
-    if (parts.length === 3) return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+  function cleanToken(w) {
+    return (w || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  function recalculateMetrics(seg) {
+    const duration = Math.max(0.05, seg.end - seg.start);
+    const words = seg.text.trim().split(/\s+/).filter(Boolean).length;
+    seg.wpm = Math.round((words / duration) * 60);
+    seg.cps = (seg.text.trim().length / duration).toFixed(1);
+  }
+
+  function createSegmentObj(idx, start, end, text) {
+    const clean = text.trim();
+    const seg = {
+      id: idx,
+      start,
+      end,
+      text: clean,
+      originalText: clean,
+      wpm: 0,
+      cps: '0.0',
+      flagged: false,
+      errorType: 'Mispronunciation',
+      note: ''
+    };
+    recalculateMetrics(seg);
+    return seg;
+  }
+
+  function parseSeconds(timeStr) {
+    const parts = timeStr.split(':');
+    if (parts.length === 3) {
+      return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+    }
     return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
   }
 
@@ -800,112 +2046,624 @@
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }
 
+  function formatFullTime(sec, useComma = false) {
+    const safeSec = Math.max(0, sec);
+    const hrs = Math.floor(safeSec / 3600);
+    const m = Math.floor((safeSec % 3600) / 60);
+    const s = Math.floor(safeSec % 60);
+    const ms = Math.floor((safeSec % 1) * 1000);
+    const sep = useComma ? ',' : '.';
+    return `${hrs.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}${sep}${ms.toString().padStart(3, '0')}`;
+  }
+
+  window.syncSegmentStart = function(idx) {
+    const cur = parseFloat(audioPlayer.currentTime.toFixed(3));
+    const target = segments[idx];
+    if (!target) return;
+    if (cur >= target.end - 0.08) return;
+
+    target.start = findNearestSilenceSnap(cur);
+    if (idx > 0) {
+      const prev = segments[idx - 1];
+      if (prev.end > target.start) {
+        prev.end = Math.max(prev.start + 0.08, target.start - 0.03);
+        recalculateMetrics(prev);
+      }
+    }
+
+    recalculateMetrics(target);
+    persistSession();
+    renderTranscript();
+    updateLiveSubtitleStrip();
+    drawWaveform();
+  };
+
+  window.syncSegmentEnd = function(idx) {
+    const cur = parseFloat(audioPlayer.currentTime.toFixed(3));
+    const target = segments[idx];
+    if (!target) return;
+    if (cur <= target.start + 0.08) return;
+
+    target.end = findNearestSilenceSnap(cur);
+    if (idx < segments.length - 1) {
+      const next = segments[idx + 1];
+      if (next.start < target.end) {
+        next.start = Math.min(next.end - 0.08, target.end + 0.03);
+        recalculateMetrics(next);
+      }
+    }
+
+    recalculateMetrics(target);
+    persistSession();
+    renderTranscript();
+    updateLiveSubtitleStrip();
+    drawWaveform();
+  };
+
+  window.nudgeCueStart = function(idx, delta) {
+    const target = segments[idx];
+    if (!target) return;
+    const newStart = Math.max(0, parseFloat((target.start + delta).toFixed(3)));
+    if (newStart >= target.end - 0.08) return;
+
+    target.start = newStart;
+    if (idx > 0) {
+      const prev = segments[idx - 1];
+      if (prev.end > target.start) {
+        prev.end = Math.max(prev.start + 0.08, target.start - 0.03);
+        recalculateMetrics(prev);
+      }
+    }
+
+    recalculateMetrics(target);
+    persistSession();
+    renderTranscript();
+    updateLiveSubtitleStrip();
+    drawWaveform();
+  };
+
+  window.jumpToSegmentCueOnly = function(idx) {
+    const seg = segments[idx];
+    if (!seg) return;
+    audioPlayer.pause();
+    audioPlayer.currentTime = seg.start;
+    drawWaveform();
+    updateLiveSubtitleStrip();
+  };
+
+  window.jumpAndPlaySegment = function(idx) {
+    const seg = segments[idx];
+    if (!seg) return;
+    clearLoop();
+    audioPlayer.currentTime = seg.start;
+    audioPlayer.play();
+  };
+
+  window.deleteSegment = function(idx) {
+    const seg = segments[idx];
+    if (!seg || !confirm(`Delete Cue #${idx + 1}?`)) return;
+
+    if (loopingSegmentIndex === idx) clearLoop();
+    else if (loopingSegmentIndex !== null && loopingSegmentIndex > idx) loopingSegmentIndex--;
+
+    segments.splice(idx, 1);
+    reindexSegments();
+    persistSession();
+    renderTranscript();
+    updateLiveSubtitleStrip();
+    drawWaveform();
+  };
+
+  window.mergeWithAbove = function(idx) {
+    if (idx <= 0) return;
+    const prev = segments[idx - 1];
+    const curr = segments[idx];
+
+    prev.text = `${prev.text} ${curr.text}`.trim();
+    prev.end = Math.max(prev.end, curr.end);
+    recalculateMetrics(prev);
+
+    segments.splice(idx, 1);
+    reindexSegments();
+    persistSession();
+    renderTranscript();
+    updateLiveSubtitleStrip();
+    drawWaveform();
+  };
+
+  btnAutoPurgeGhosts.addEventListener('click', () => {
+    if (segments.length < 2) return;
+    let removedCount = 0;
+    for (let i = segments.length - 1; i > 0; i--) {
+      const curr = segments[i];
+      const prev = segments[i - 1];
+
+      const cleanCurr = cleanToken(curr.text);
+      const cleanPrev = cleanToken(prev.text);
+
+      const isIdentical = (cleanCurr.length > 0 && cleanCurr === cleanPrev);
+      const isSquashed = (curr.end - curr.start <= 0.6) || (curr.wpm > 350);
+
+      if (isIdentical || (isSquashed && cleanCurr.includes(cleanPrev))) {
+        prev.end = Math.max(prev.end, curr.end);
+        recalculateMetrics(prev);
+        segments.splice(i, 1);
+        removedCount++;
+      }
+    }
+
+    if (removedCount > 0) {
+      reindexSegments();
+      clearLoop();
+      persistSession();
+      renderTranscript();
+      updateLiveSubtitleStrip();
+      drawWaveform();
+      alert(`Purged ${removedCount} ghost duplicate cues.`);
+    } else {
+      alert("No adjacent ghost duplicates detected.");
+    }
+  });
+
+  function reindexSegments() {
+    segments.forEach((s, i) => s.id = i);
+  }
+
   function renderTranscript() {
     transcriptDiv.innerHTML = '';
     currentActiveId = null;
 
+    const selectedError = errorFilter.value;
+
     segments.forEach((seg, idx) => {
+      if (activeFilter === 'flagged' && !seg.flagged) return;
+      if (selectedError && seg.errorType !== selectedError) return;
+
+      const isThisLooping = (loopingSegmentIndex === idx);
       const card = document.createElement('div');
-      card.className = `segment ${seg.flagged ? 'flagged' : ''}`;
+      card.className = `segment ${seg.flagged ? 'flagged' : ''} ${isThisLooping ? 'looping-cue' : ''}`;
       card.id = `seg-${idx}`;
       card.dataset.start = seg.start;
       card.dataset.end = seg.end;
 
+      let paceClass = 'pace-norm';
+      if (seg.wpm > 185) paceClass = 'pace-fast';
+      else if (seg.wpm < 100) paceClass = 'pace-slow';
+
       card.innerHTML = `
-        <div class="seg-main" title="Click to listen">
-          <span class="time-badge">[${formatTime(seg.start)}]</span>
-          <span class="text-body">${seg.text}</span>
-          <div class="seg-actions" onclick="event.stopPropagation()">
-            <button class="flag-btn ${seg.flagged ? 'is-flagged' : ''}" data-idx="${idx}">
-              ⚑ ${seg.flagged ? 'Flagged' : 'Flag Issue'}
-            </button>
-          </div>
+        <div class="seg-header" onclick="window.jumpToSegmentCueOnly(${idx})" title="Click header to cue playhead">
+          <span class="cue-number">#${idx + 1}</span>
+          <span class="time-badge" onclick="event.stopPropagation(); window.jumpAndPlaySegment(${idx})" title="Click to play">
+            [${formatTime(seg.start)} - ${formatTime(seg.end)}]
+          </span>
+          <span class="pace-pill ${paceClass}">${seg.wpm} WPM | ${seg.cps} CPS</span>
+
+          <button class="btn-nudge" onclick="event.stopPropagation(); window.nudgeCueStart(${idx}, -0.1)">◀ -0.1s</button>
+          <button class="btn-sync" onclick="event.stopPropagation(); window.syncSegmentStart(${idx})">⏱ Set In</button>
+          <button class="btn-nudge" onclick="event.stopPropagation(); window.nudgeCueStart(${idx}, 0.1)">+0.1s ▶</button>
+          <button class="btn-sync" onclick="event.stopPropagation(); window.syncSegmentEnd(${idx})">⏱ Set Out</button>
+
+          ${idx > 0 ? `<button class="btn-mini" onclick="event.stopPropagation(); window.mergeWithAbove(${idx})">🔗 Merge</button>` : ''}
+          <button class="btn-mini" onclick="event.stopPropagation(); window.splitSegmentDirect(${idx})">✂️ Split</button>
+          <button class="btn-danger-sm" onclick="event.stopPropagation(); window.deleteSegment(${idx})">🗑️</button>
+
+          <button class="btn-ctrl" style="padding: 2px 7px; font-size: 0.72rem; margin-left: auto;" onclick="event.stopPropagation(); window.playSegment(${idx})">▶ Play</button>
+          <button class="btn-ctrl ${isThisLooping ? 'active-loop' : ''}" style="padding: 2px 7px; font-size: 0.72rem;" onclick="event.stopPropagation(); window.toggleLoopSegment(${idx})">
+            ${isThisLooping ? '🔁 Looping' : '🔁 Loop'}
+          </button>
+        </div>
+
+        <textarea class="seg-text-input" data-idx="${idx}">${seg.text}</textarea>
+
+        <div class="seg-footer">
+          <button class="flag-btn ${seg.flagged ? 'is-flagged' : ''}" data-idx="${idx}">
+            ⚑ ${seg.flagged ? 'Flagged' : 'Flag Issue'}
+          </button>
+          <span style="font-size: 0.74rem; color: var(--muted); margin-left: 4px;">${seg.flagged ? seg.errorType : ''}</span>
         </div>
 
         <div class="comment-drawer ${seg.flagged ? 'open' : ''}" id="drawer-${idx}">
           <div class="row">
-            <label style="font-size: 0.8rem; color: var(--muted);">Issue Type:</label>
+            <label style="font-size: 0.76rem; color: var(--muted);">Issue Type:</label>
             <select class="error-type" data-idx="${idx}">
               <option value="Mispronunciation" ${seg.errorType === 'Mispronunciation' ? 'selected' : ''}>Mispronunciation</option>
               <option value="Unnatural Pause / Cadence" ${seg.errorType === 'Unnatural Pause / Cadence' ? 'selected' : ''}>Unnatural Pause / Cadence</option>
-              <option value="Audio Artifact / Noise" ${seg.errorType === 'Audio Artifact / Noise' ? 'selected' : ''}>Audio Artifact / Noise</option>
+              <option value="Audio Artifact / Glitch" ${seg.errorType === 'Audio Artifact / Glitch' ? 'selected' : ''}>Audio Artifact / Glitch</option>
               <option value="Wrong Emotion / Tone" ${seg.errorType === 'Wrong Emotion / Tone' ? 'selected' : ''}>Wrong Emotion / Tone</option>
               <option value="Dropped / Skipped Word" ${seg.errorType === 'Dropped / Skipped Word' ? 'selected' : ''}>Dropped / Skipped Word</option>
               <option value="Other" ${seg.errorType === 'Other' ? 'selected' : ''}>Other</option>
             </select>
           </div>
-          <textarea placeholder="Describe the change needed or notes for retake..." data-idx="${idx}">${seg.note}</textarea>
+          
+          <div class="quick-pill-container">
+            <span style="font-size: 0.68rem; color: var(--muted);">Quick Add:</span>
+            <button class="btn-quick-pill" onclick="window.appendQuickNote(${idx}, 'Breath / Click')">+ Breath/Click</button>
+            <button class="btn-quick-pill" onclick="window.appendQuickNote(${idx}, 'Stumbled on word')">+ Stumble</button>
+            <button class="btn-quick-pill" onclick="window.appendQuickNote(${idx}, 'Plosive / P-Pop')">+ P-Pop</button>
+            <button class="btn-quick-pill" onclick="window.appendQuickNote(${idx}, 'Muffled audio')">+ Muffled</button>
+            <button class="btn-quick-pill" onclick="window.appendQuickNote(${idx}, 'Pacing rushed')">+ Rushed</button>
+            <button class="btn-quick-pill" onclick="window.appendQuickNote(${idx}, 'Low energy / Flat')">+ Low Energy</button>
+          </div>
+
+          <textarea placeholder="Describe error or notes for retake..." data-idx="${idx}">${seg.note}</textarea>
         </div>
       `;
 
-      card.querySelector('.seg-main').addEventListener('click', () => {
-        audioPlayer.currentTime = seg.start;
-        audioPlayer.play();
+      card.querySelector('.seg-text-input').addEventListener('input', (e) => {
+        seg.text = e.target.value;
+        recalculateMetrics(seg);
+        updateLiveSubtitleStrip();
+        persistSession();
       });
 
-      const flagBtn = card.querySelector('.flag-btn');
-      flagBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
+      card.querySelector('.flag-btn').addEventListener('click', () => {
         seg.flagged = !seg.flagged;
         card.classList.toggle('flagged', seg.flagged);
-        flagBtn.classList.toggle('is-flagged', seg.flagged);
-        flagBtn.innerHTML = `⚑ ${seg.flagged ? 'Flagged' : 'Flag Issue'}`;
-        card.querySelector('.comment-drawer').classList.toggle('open', seg.flagged);
-        updateCounter();
+        renderTranscript();
+        persistSession();
       });
 
-      card.querySelector('.error-type').addEventListener('change', (e) => { seg.errorType = e.target.value; });
-      card.querySelector('textarea').addEventListener('input', (e) => { seg.note = e.target.value; });
+      card.querySelector('.error-type').addEventListener('change', (e) => {
+        seg.errorType = e.target.value;
+        persistSession();
+      });
+
+      card.querySelector('.comment-drawer textarea').addEventListener('input', (e) => {
+        seg.note = e.target.value;
+        persistSession();
+      });
 
       transcriptDiv.appendChild(card);
     });
 
-    updateCounter();
+    updateFilterCounts();
   }
 
-  function updateCounter() {
-    const count = segments.filter(s => s.flagged).length;
-    flagCounter.textContent = `${count} ${count === 1 ? 'Issue' : 'Issues'} Flagged`;
+  window.splitSegmentDirect = function(idx) {
+    audioPlayer.currentTime = (segments[idx].start + segments[idx].end) / 2;
+    splitCueAtPlayhead();
+  };
+
+  window.appendQuickNote = function(idx, textToAdd) {
+    const seg = segments[idx];
+    if (!seg) return;
+    seg.note = seg.note ? `${seg.note}; ${textToAdd}` : textToAdd;
+    const textarea = document.querySelector(`#drawer-${idx} textarea`);
+    if (textarea) textarea.value = seg.note;
+    persistSession();
+  };
+
+  window.playSegment = function(idx) {
+    const seg = segments[idx];
+    if (!seg) return;
+    clearLoop();
+    audioPlayer.currentTime = Math.max(0, seg.start - 0.08);
+    audioPlayer.play();
+  };
+
+  window.toggleLoopSegment = function(idx) {
+    if (loopingSegmentIndex === idx) clearLoop();
+    else setLoopSegment(idx);
+  };
+
+  function setLoopSegment(idx) {
+    const seg = segments[idx];
+    if (!seg) return;
+    loopingSegmentIndex = idx;
+    updateLoopUi();
+    audioPlayer.currentTime = seg.start;
+    audioPlayer.play();
+    drawWaveform();
   }
 
-  // Auto-scroll
+  function clearLoop() {
+    loopingSegmentIndex = null;
+    updateLoopUi();
+    drawWaveform();
+  }
+
+  function updateLoopUi() {
+    if (loopingSegmentIndex !== null) {
+      btnLoopSentence.classList.add('active-loop');
+      btnLoopSentence.innerHTML = '✖ Clear Loop [R]';
+    } else {
+      btnLoopSentence.classList.remove('active-loop');
+      btnLoopSentence.innerHTML = '🔁 Loop Cue [R]';
+    }
+
+    document.querySelectorAll('.segment').forEach((card, idx) => {
+      const isLoop = (loopingSegmentIndex === idx);
+      card.classList.toggle('looping-cue', isLoop);
+      const loopBtn = card.querySelectorAll('.btn-ctrl')[1];
+      if (loopBtn) {
+        loopBtn.classList.toggle('active-loop', isLoop);
+        loopBtn.innerHTML = isLoop ? '🔁 Looping' : '🔁 Loop';
+      }
+    });
+    updateLiveSubtitleStrip();
+  }
+
   audioPlayer.addEventListener('timeupdate', () => {
     const cur = audioPlayer.currentTime;
-    const segmentElements = document.querySelectorAll('.segment');
-    let activeElem = null;
+    updateLiveSubtitleStrip();
 
-    for (let i = 0; i < segmentElements.length; i++) {
-      const elem = segmentElements[i];
-      const start = parseFloat(elem.dataset.start);
-      const end = parseFloat(elem.dataset.end);
-
-      if (cur >= start && cur < end) {
-        activeElem = elem;
-        elem.classList.add('active');
-      } else {
-        elem.classList.remove('active');
+    if (loopingSegmentIndex !== null) {
+      const loopSeg = segments[loopingSegmentIndex];
+      if (loopSeg && (cur >= loopSeg.end || cur < loopSeg.start)) {
+        audioPlayer.currentTime = loopSeg.start;
+        return;
       }
     }
 
-    if (activeElem && activeElem.id !== currentActiveId) {
-      currentActiveId = activeElem.id;
-      if (autoscrollToggle.checked) {
-        const offset = activeElem.offsetTop - (transcriptDiv.clientHeight / 2) + (activeElem.clientHeight / 2);
-        transcriptDiv.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+    let currentIdx = null;
+    for (let i = 0; i < segments.length; i++) {
+      if (cur >= segments[i].start && cur < segments[i].end) {
+        currentIdx = i;
+        break;
+      }
+    }
+
+    if (currentIdx !== null) {
+      const activeCard = document.getElementById(`seg-${currentIdx}`);
+      if (activeCard && activeCard.id !== currentActiveId) {
+        document.querySelectorAll('.segment.active').forEach(c => c.classList.remove('active'));
+        activeCard.classList.add('active');
+        currentActiveId = activeCard.id;
+
+        if (autoscrollToggle.checked) {
+          const targetScroll = activeCard.offsetTop - (transcriptDiv.clientHeight / 2) + (activeCard.clientHeight / 2);
+          transcriptDiv.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+        }
       }
     }
   });
 
-  audioPlayer.addEventListener('seeked', () => { currentActiveId = null; });
+  btnRewind5.addEventListener('click', () => {
+    audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 5);
+  });
+  btnForward5.addEventListener('click', () => {
+    audioPlayer.currentTime = Math.min(audioPlayer.duration || 999999, audioPlayer.currentTime + 5);
+  });
+
+  btnLoopSentence.addEventListener('click', () => {
+    if (loopingSegmentIndex !== null) {
+      clearLoop();
+    } else {
+      const cur = audioPlayer.currentTime;
+      const segIdx = segments.findIndex(s => cur >= s.start && cur < s.end);
+      if (segIdx !== -1) setLoopSegment(segIdx);
+    }
+  });
+
+  speedSlider.addEventListener('input', (e) => {
+    const rate = parseFloat(e.target.value);
+    audioPlayer.playbackRate = rate;
+    speedDisplay.textContent = `${rate.toFixed(2)}x`;
+  });
+  speedSlider.addEventListener('dblclick', () => {
+    speedSlider.value = 1.0;
+    audioPlayer.playbackRate = 1.0;
+    speedDisplay.textContent = '1.00x';
+  });
+  pitchToggle.addEventListener('change', (e) => {
+    audioPlayer.preservesPitch = e.target.checked;
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+      if (e.key === 'Escape') document.activeElement.blur();
+      return;
+    }
+
+    if (e.code === 'Space') {
+      e.preventDefault();
+      audioPlayer.paused ? audioPlayer.play() : audioPlayer.pause();
+    } else if (e.key === 'q' || e.key === 'Q') {
+      e.preventDefault();
+      auditionInHead();
+    } else if (e.key === 'e' || e.key === 'E') {
+      e.preventDefault();
+      auditionOutTail();
+    } else if (e.key === 's' || e.key === 'S') {
+      e.preventDefault();
+      splitCueAtPlayhead();
+    } else if (e.key === 'i' || e.key === 'I') {
+      e.preventDefault();
+      handleQuickSetIn();
+    } else if (e.key === 'o' || e.key === 'O') {
+      e.preventDefault();
+      handleQuickSetOut();
+    } else if (e.key === 'j' || e.key === 'J') {
+      audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 5);
+    } else if (e.key === 'l' || e.key === 'L') {
+      audioPlayer.currentTime = Math.min(audioPlayer.duration || 999999, audioPlayer.currentTime + 5);
+    } else if (e.key === 'r' || e.key === 'R') {
+      if (loopingSegmentIndex !== null) clearLoop();
+      else {
+        const cur = audioPlayer.currentTime;
+        const segIdx = segments.findIndex(s => cur >= s.start && cur < s.end);
+        if (segIdx !== -1) setLoopSegment(segIdx);
+      }
+    } else if (e.key === 'f' || e.key === 'F') {
+      const cur = audioPlayer.currentTime;
+      const segIdx = segments.findIndex(s => cur >= s.start && cur < s.end);
+      if (segIdx !== -1) {
+        segments[segIdx].flagged = !segments[segIdx].flagged;
+        renderTranscript();
+        persistSession();
+      }
+    }
+  });
+
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeFilter = tab.dataset.filter;
+      renderTranscript();
+    });
+  });
+
+  errorFilter.addEventListener('change', () => renderTranscript());
+
+  function updateFilterCounts() {
+    countAll.textContent = segments.length;
+    const flagged = segments.filter(s => s.flagged).length;
+    countFlagged.textContent = flagged;
+    flagCounter.textContent = `${flagged} ${flagged === 1 ? 'Error' : 'Errors'} Flagged`;
+  }
+
+  function getStorageKey() {
+    return `qc_review_${currentTrackTitle.replace(/\s+/g, '_')}`;
+  }
+
+  function buildVTTString() {
+    return 'WEBVTT\n\n' + segments.map((s, idx) => {
+      return `${idx + 1}\n${formatFullTime(s.start, false)} --> ${formatFullTime(s.end, false)}\n${s.text}\n`;
+    }).join('\n');
+  }
+
+  function buildCsvString() {
+    const flagged = segments.filter(s => s.flagged);
+    const headers = ['Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
+    const rows = flagged.map((s, i) => [
+      i + 1,
+      formatTime(s.start),
+      formatTime(s.end),
+      `"${s.errorType.replace(/"/g, '""')}"`,
+      `"${s.text.replace(/"/g, '""')}"`,
+      `"${(s.note || '').replace(/"/g, '""')}"`
+    ]);
+    return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  }
+
+  btnLinkDiskFile.addEventListener('click', async () => {
+    try {
+      diskVttHandle = await window.showSaveFilePicker({
+        suggestedName: `${currentTrackTitle.replace(/\s+/g, '_')}_corrected.vtt`,
+        types: [{ description: 'WebVTT Subtitles', accept: { 'text/vtt': ['.vtt'] } }]
+      });
+      btnLinkDiskFile.classList.add('active-loop');
+      btnLinkDiskFile.textContent = '💾 VTT Synced';
+      updateDiskStatusText();
+      await flushToDisk();
+    } catch (err) {
+      if (err.name !== 'AbortError') console.error(err);
+    }
+  });
+
+  btnLinkCsvFile.addEventListener('click', async () => {
+    try {
+      diskCsvHandle = await window.showSaveFilePicker({
+        suggestedName: `${currentTrackTitle.replace(/\s+/g, '_')}_retakes.csv`,
+        types: [{ description: 'CSV Retake Sheet', accept: { 'text/csv': ['.csv'] } }]
+      });
+      btnLinkCsvFile.classList.add('active-loop');
+      btnLinkCsvFile.textContent = '📋 CSV Synced';
+      updateDiskStatusText();
+      await flushToDisk();
+    } catch (err) {
+      if (err.name !== 'AbortError') console.error(err);
+    }
+  });
+
+  function updateDiskStatusText() {
+    const parts = [];
+    if (diskVttHandle) parts.push(diskVttHandle.name);
+    if (diskCsvHandle) parts.push(diskCsvHandle.name);
+    if (parts.length) {
+      diskSaveStatus.style.color = 'var(--success)';
+      diskSaveStatus.textContent = `(${parts.join(', ')})`;
+    }
+  }
+
+  async function flushToDisk() {
+    if (!segments.length) return;
+    try {
+      if (diskVttHandle) {
+        const writableVtt = await diskVttHandle.createWritable();
+        await writableVtt.write(buildVTTString());
+        await writableVtt.close();
+      }
+      if (diskCsvHandle) {
+        const writableCsv = await diskCsvHandle.createWritable();
+        await writableCsv.write(buildCsvString());
+        await writableCsv.close();
+      }
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      diskSaveStatus.style.color = 'var(--success)';
+      diskSaveStatus.textContent = `Auto-saved ${timeStr}`;
+    } catch (err) {
+      diskSaveStatus.style.color = 'var(--danger)';
+      diskSaveStatus.textContent = "Write error";
+    }
+  }
+
+  function persistSession() {
+    const key = getStorageKey();
+    if (!key || !segments.length) return;
+    const payload = segments.map(s => ({
+      id: s.id,
+      start: s.start,
+      end: s.end,
+      text: s.text,
+      flagged: s.flagged,
+      errorType: s.errorType,
+      note: s.note
+    }));
+    localStorage.setItem(key, JSON.stringify(payload));
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(flushToDisk, 450);
+  }
+
+  function loadSession() {
+    const key = getStorageKey();
+    if (!key) return;
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+
+    try {
+      const saved = JSON.parse(raw);
+      saved.forEach((item, index) => {
+        if (segments[index]) {
+          if (item.start !== undefined) segments[index].start = item.start;
+          if (item.end !== undefined) segments[index].end = item.end;
+          segments[index].text = item.text;
+          segments[index].flagged = item.flagged;
+          segments[index].errorType = item.errorType;
+          segments[index].note = item.note;
+          recalculateMetrics(segments[index]);
+        }
+      });
+    } catch (e) {}
+  }
+
+  btnClearStorage.addEventListener('click', () => {
+    const key = getStorageKey();
+    if (key && confirm("Reset all saved notes, retimed cues, and flags for this file?")) {
+      localStorage.removeItem(key);
+      location.reload();
+    }
+  });
+
+  function downloadBlob(content, filename, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   // Export Notes (.txt)
   document.getElementById('btnExportTxt').addEventListener('click', () => {
     const flagged = segments.filter(s => s.flagged);
     if (!flagged.length) return alert('No issues have been flagged for this track.');
 
-    const trackTitle = TRACKS[activeIndex].title;
-    let txt = `AUDIO REVIEW NOTES - ${trackTitle}\nGenerated: ${new Date().toLocaleString()}\n\n`;
-
+    let txt = `AUDIO REVIEW NOTES - ${currentTrackTitle}\nGenerated: ${new Date().toLocaleString()}\n\n`;
     flagged.forEach((item, i) => {
       txt += `[${i + 1}] TIME: ${formatTime(item.start)} - ${formatTime(item.end)}\n`;
       txt += `ISSUE: ${item.errorType}\n`;
@@ -913,21 +2671,28 @@
       txt += `NOTE: ${item.note || 'None'}\n\n`;
       txt += `----------------------------------------\n\n`;
     });
-
-    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${trackTitle.replace(/\s+/g, '_')}_review_notes.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(txt, `${currentTrackTitle.replace(/\s+/g, '_')}_review_notes.txt`, 'text/plain;charset=utf-8');
   });
 
-  // Verify access upon landing
+  document.getElementById('btnExportVtt').addEventListener('click', () => {
+    downloadBlob(buildVTTString(), `${currentTrackTitle.replace(/\s+/g, '_')}_corrected.vtt`, 'text/vtt;charset=utf-8');
+  });
+
+  document.getElementById('btnExportSrt').addEventListener('click', () => {
+    let srt = segments.map((s, idx) => {
+      return `${idx + 1}\n${formatFullTime(s.start, true)} --> ${formatFullTime(s.end, true)}\n${s.text}\n`;
+    }).join('\n');
+    downloadBlob(srt, `${currentTrackTitle.replace(/\s+/g, '_')}_corrected.srt`, 'text/plain;charset=utf-8');
+  });
+
+  document.getElementById('btnExportCsv').addEventListener('click', () => {
+    const csvContent = buildCsvString();
+    if (!segments.some(s => s.flagged)) return alert('No errors currently flagged to export.');
+    downloadBlob(csvContent, `${currentTrackTitle.replace(/\s+/g, '_')}_retake_sheet.csv`, 'text/csv;charset=utf-8');
+  });
+
+  // Access Entry Point
   checkClientAccess();
 </script>
-
 </body>
 </html>
