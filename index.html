@@ -116,15 +116,7 @@
       border-color: var(--accent);
     }
 
-    .file-box {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 0.78rem;
-      flex: 1;
-      min-width: 200px;
-    }
-    input[type="file"], select {
+    select {
       background: #0f172a;
       border: 1px solid var(--border);
       color: var(--text);
@@ -199,7 +191,7 @@
       user-select: none;
     }
 
-    /* Subtitle Strip with Quick Set In / Set Out Action Buttons */
+    /* Subtitle Strip with Set In / Set Out */
     .live-subtitle-strip {
       background: #040810;
       border: 1px solid var(--border);
@@ -265,7 +257,7 @@
     }
     .btn-set-out:hover { background: #dc2626; }
 
-    /* Action & Auto-Save Bar */
+    /* Single-Line Action & Forced Auto-Save Bar */
     .compact-action-bar {
       display: flex;
       align-items: center;
@@ -333,7 +325,7 @@
       font-size: 0.68rem;
       font-family: monospace;
       color: var(--muted);
-      max-width: 140px;
+      max-width: 170px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -377,6 +369,7 @@
       border-color: var(--success);
       color: var(--success);
     }
+
     .btn-sync {
       background: rgba(56, 189, 248, 0.15);
       border: 1px solid rgba(56, 189, 248, 0.4);
@@ -847,26 +840,14 @@
 <div class="container" id="mainContainer">
   <div class="header-row">
     <h2 id="appTitle" title="Double click or click the gear for settings">Audio Review & QC Studio</h2>
-    <button id="btnAdminTrigger" title="Admin Settings">⚙️️</button>
+    <button id="btnAdminTrigger" title="Admin Settings">⚙️</button>
   </div>
 
   <div class="panel">
-    <!-- Chapter / Track Selector (Cloud / Project Tracks) -->
+    <!-- Chapter / Track Selector (Cloud / Configured Tracks) -->
     <div class="track-section" id="trackSection">
       <span class="track-label">Select Chapter / Track:</span>
       <div class="track-grid" id="trackGrid"></div>
-    </div>
-
-    <!-- Local File Input Alternative -->
-    <div class="row" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
-      <div class="file-box">
-        <label>Or Load Local Audio (.wav/.mp3):</label>
-        <input type="file" id="audioInput" accept="audio/*">
-      </div>
-      <div class="file-box">
-        <label>Or Load Local WebVTT (.vtt):</label>
-        <input type="file" id="vttInput" accept=".vtt">
-      </div>
     </div>
 
     <!-- Filter & Combined Status Bar -->
@@ -888,7 +869,7 @@
       <span class="flag-counter" id="flagCounter">0 Errors Flagged</span>
     </div>
 
-    <!-- Action Bar (Auto-Save & Exports) -->
+    <!-- Action Bar (Forced Auto-Save & Exports) -->
     <div class="compact-action-bar" id="compactActionBar">
       <span class="bar-section-label">AUTO-SAVE:</span>
       <button class="btn-xs" id="btnLinkDiskFile" style="border-color: rgba(56, 189, 248, 0.4); color: var(--accent);" title="Connect to local .VTT file for direct auto-save">
@@ -1245,8 +1226,6 @@
   // ==========================================================
   // 3. CORE QC & WAVEFORM ENGINE
   // ==========================================================
-  const audioInput = document.getElementById('audioInput');
-  const vttInput = document.getElementById('vttInput');
   const audioPlayer = document.getElementById('audioPlayer');
   const waveCanvas = document.getElementById('waveCanvas');
   const waveWrap = document.getElementById('waveWrap');
@@ -1401,7 +1380,7 @@
       segments = [];
       renderTranscript();
       statusDiv.textContent = `Playing "${track.title}", but VTT transcript not found locally.`;
-      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not locate "${track.vtt}". Upload manually above or place in folder.</p>`;
+      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not locate "${track.vtt}". Ensure it exists in your directory or configure in admin.</p>`;
     }
   }
 
@@ -1425,43 +1404,6 @@
       console.error(e);
     }
   }
-
-  audioInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    persistSession();
-    currentTrackTitle = file.name.replace(/\.[^/.]+$/, '');
-    activeIndex = -1;
-    document.querySelectorAll('.track-pill').forEach(b => b.classList.remove('active'));
-
-    audioPlayer.src = URL.createObjectURL(file);
-    statusDiv.textContent = `Decoding waveform for ${file.name}...`;
-
-    try {
-      const arrayBuf = await file.arrayBuffer();
-      await processAudioBuffer(arrayBuf);
-      loadSession();
-      statusDiv.textContent = `Loaded audio: "${file.name}"`;
-    } catch(err) {
-      statusDiv.textContent = `Waveform error: ${err.message}`;
-    }
-  });
-
-  vttInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    vttFileName = file.name;
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      parseWebVTT(evt.target.result);
-      loadSession();
-      renderTranscript();
-      updateLiveSubtitleStrip();
-      statusDiv.textContent = `Loaded VTT: "${file.name}" (${segments.length} cues)`;
-    };
-    reader.readAsText(file);
-  });
 
   function findNearestSilenceSnap(targetSec, searchRadiusSec = 0.18) {
     if (!channelData || !magneticSnapEnabled) return targetSec;
@@ -2530,8 +2472,7 @@
     return `"${(val || '').toString().replace(/"/g, '""')}"`;
   }
 
-  // Generates CSV rows according to the requested column structure:
-  // File, Cue #, Time Start, Time End, Issue Type, Script Phrase, Reviewer Note
+  // File - Cue # - Time Start - Time End - Issue Type - Script Phrase - Reviewer Note
   function generateCsvFromSegments(items, fileName) {
     const flagged = items.filter(s => s.flagged);
     return flagged.map((s, i) => [
@@ -2574,7 +2515,13 @@
     return [headers.join(','), ...allRows].join('\n');
   }
 
-  btnLinkDiskFile.addEventListener('click', async () => {
+  // ==========================================================
+  // 4. FORCED AUTO-SAVE FILE PICKER HANDLERS
+  // ==========================================================
+  async function promptAndEnsureVttDiskHandle() {
+    if (!supportsFSA) return false;
+    if (diskVttHandle) return true;
+
     try {
       diskVttHandle = await window.showSaveFilePicker({
         suggestedName: `${currentTrackTitle.replace(/\s+/g, '_')}_corrected.vtt`,
@@ -2583,25 +2530,51 @@
       btnLinkDiskFile.classList.add('active-loop');
       btnLinkDiskFile.textContent = '💾 VTT Synced';
       updateDiskStatusText();
-      await flushToDisk();
+      return true;
     } catch (err) {
       if (err.name !== 'AbortError') console.error(err);
+      return false;
     }
-  });
+  }
 
-  btnLinkCsvFile.addEventListener('click', async () => {
+  async function promptAndEnsureCsvDiskHandle() {
+    if (!supportsFSA) return false;
+    if (diskCsvHandle) return true;
+
     try {
       diskCsvHandle = await window.showSaveFilePicker({
-        suggestedName: `${currentTrackTitle.replace(/\s+/g, '_')}_retakes.csv`,
+        suggestedName: `Master_Project_Retake_Sheet.csv`,
         types: [{ description: 'CSV Retake Sheet', accept: { 'text/csv': ['.csv'] } }]
       });
       btnLinkCsvFile.classList.add('active-loop');
       btnLinkCsvFile.textContent = '📋 CSV Synced';
       updateDiskStatusText();
-      await flushToDisk();
+      return true;
     } catch (err) {
       if (err.name !== 'AbortError') console.error(err);
+      return false;
     }
+  }
+
+  async function checkForcedAutoSavePrompt() {
+    if (!supportsFSA) return;
+    if (!diskVttHandle || !diskCsvHandle) {
+      if (!diskVttHandle) await promptAndEnsureVttDiskHandle();
+      if (!diskCsvHandle) await promptAndEnsureCsvDiskHandle();
+      await flushToDisk();
+    }
+  }
+
+  btnLinkDiskFile.addEventListener('click', async () => {
+    diskVttHandle = null;
+    await promptAndEnsureVttDiskHandle();
+    await flushToDisk();
+  });
+
+  btnLinkCsvFile.addEventListener('click', async () => {
+    diskCsvHandle = null;
+    await promptAndEnsureCsvDiskHandle();
+    await flushToDisk();
   });
 
   function updateDiskStatusText() {
@@ -2624,7 +2597,7 @@
       }
       if (diskCsvHandle) {
         const writableCsv = await diskCsvHandle.createWritable();
-        await writableCsv.write(buildCsvString());
+        await writableCsv.write(buildAllTracksCsvString());
         await writableCsv.close();
       }
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -2650,7 +2623,9 @@
     }));
     localStorage.setItem(key, JSON.stringify(payload));
     clearTimeout(autoSaveTimeout);
-    autoSaveTimeout = setTimeout(flushToDisk, 450);
+    autoSaveTimeout = setTimeout(() => {
+      checkForcedAutoSavePrompt().then(flushToDisk);
+    }, 450);
   }
 
   function loadSession() {
@@ -2722,14 +2697,12 @@
     downloadBlob(srt, `${currentTrackTitle.replace(/\s+/g, '_')}_corrected.srt`, 'text/plain;charset=utf-8');
   });
 
-  // Export Current Chapter Retake CSV
   document.getElementById('btnExportCsv').addEventListener('click', () => {
     const csvContent = buildCsvString();
     if (!segments.some(s => s.flagged)) return alert('No errors currently flagged for this chapter.');
     downloadBlob(csvContent, `${currentTrackTitle.replace(/\s+/g, '_')}_retakes.csv`, 'text/csv;charset=utf-8');
   });
 
-  // Export All Chapters Combined Retake CSV
   document.getElementById('btnExportAllCsv').addEventListener('click', () => {
     const csvContent = buildAllTracksCsvString();
     const rowsCount = csvContent.split('\n').filter(Boolean).length;
