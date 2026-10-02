@@ -188,18 +188,17 @@
       background: #040810;
       border: 1px solid var(--border);
       border-radius: 0 0 8px 8px;
-      padding: 5px 10px;
+      padding: 8px 12px;
       min-height: 42px;
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
       position: relative;
-      gap: 8px;
     }
     .live-sub-text {
       flex: 1;
-      font-size: 0.9rem;
-      line-height: 1.25;
+      font-size: 0.92rem;
+      line-height: 1.35;
       font-weight: 600;
       color: #ffffff;
       text-align: center;
@@ -211,41 +210,9 @@
     .live-sub-text.placeholder {
       color: var(--muted);
       font-weight: 400;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       font-style: italic;
     }
-    .btn-set-in {
-      background: #10b981;
-      color: #040810;
-      border: 1px solid #34d399;
-      font-weight: 800;
-      font-size: 0.72rem;
-      padding: 4px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      white-space: nowrap;
-      box-shadow: 0 0 6px rgba(16, 185, 129, 0.25);
-    }
-    .btn-set-in:hover { background: #059669; color: #fff; }
-    .btn-set-out {
-      background: #ef4444;
-      color: #fff;
-      border: 1px solid #f87171;
-      font-weight: 800;
-      font-size: 0.72rem;
-      padding: 4px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      white-space: nowrap;
-      box-shadow: 0 0 6px rgba(239, 68, 68, 0.25);
-    }
-    .btn-set-out:hover { background: #dc2626; }
     .compact-action-bar {
       display: flex;
       align-items: center;
@@ -355,17 +322,6 @@
       border-color: var(--success);
       color: var(--success);
     }
-    .btn-sync {
-      background: rgba(56, 189, 248, 0.15);
-      border: 1px solid rgba(56, 189, 248, 0.4);
-      color: var(--accent);
-      padding: 2px 7px;
-      font-size: 0.7rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .btn-sync:hover { background: var(--accent); color: #040810; }
     .btn-nudge {
       background: #1e293b;
       border: 1px solid var(--border);
@@ -378,6 +334,17 @@
       cursor: pointer;
     }
     .btn-nudge:hover { background: #334155; color: #fff; }
+    .btn-danger-sm {
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      color: #fda4af;
+      padding: 2px 7px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-danger-sm:hover { background: var(--danger); color: #fff; }
     .btn-mini {
       background: #1e293b;
       border: 1px solid var(--border);
@@ -705,7 +672,6 @@
       min-height: 200px;
       white-space: pre;
     }
-    .modal-box input:focus, .modal-box textarea:focus { border-color: var(--accent); }
     .btn-primary {
       background: #0284c7;
       color: #fff;
@@ -752,7 +718,7 @@
 <!-- Admin Login Verification Modal -->
 <div id="adminAuthModal" class="overlay-backdrop" style="display:none;">
   <div class="modal-box" style="text-align: center;">
-    <div style="font-size: 2rem;">🛡️</div>
+    <div style="font-size: 2rem;">🛡️️</div>
     <h3>Admin Verification</h3>
     <p>Enter the master admin password to configure this portal.</p>
     <input type="password" id="adminPassInput" placeholder="Master Password" autofocus>
@@ -822,7 +788,7 @@
       <span class="flag-counter" id="flagCounter">0 Errors Flagged</span>
     </div>
 
-    <!-- Action Bar (Simplified: Retake CSV Sheets & Notes only) -->
+    <!-- Action Bar -->
     <div class="compact-action-bar" id="compactActionBar">
       <span class="bar-section-label">AUTO-SAVE:</span>
       <button class="btn-xs" id="btnLinkCsvFile" style="border-color: rgba(245, 158, 11, 0.4); color: var(--warning);" title="Connect to master .CSV retake sheet for direct auto-save">
@@ -868,12 +834,8 @@
         <div class="wave-badge" id="waveModeBadge">Window ±5.0s</div>
       </div>
 
-      <!-- Live Subtitle Strip -->
+      <!-- Live Subtitle Strip (Clean View) -->
       <div class="live-subtitle-strip" id="liveSubtitleStrip">
-        <button type="button" class="btn-set-in" id="btnSetInQuick" title="Set IN boundary of active cue to current playhead [Press I]">
-          ◀ SET IN [I]
-        </button>
-        
         <div class="live-sub-text placeholder" id="liveSubText">Select a chapter to begin</div>
       </div>
     </div>
@@ -905,7 +867,6 @@
 
       <div class="shortcut-legend">
         <span><kbd>Space</kbd> Play</span>
-        <span><kbd>I</kbd> Set In</span>
         <span><kbd>R</kbd> Loop</span>
         <span><kbd>F</kbd> Flag</span>
       </div>
@@ -1150,7 +1111,6 @@
   const waveModeBadge = document.getElementById('waveModeBadge');
   const liveSubText = document.getElementById('liveSubText');
   const trackGrid = document.getElementById('trackGrid');
-  const btnSetInQuick = document.getElementById('btnSetInQuick');
 
   const zoomWindowSlider = document.getElementById('zoomWindowSlider');
   const zoomWindowVal = document.getElementById('zoomWindowVal');
@@ -1379,56 +1339,22 @@
       ctx.fillStyle = '#334155';
       ctx.font = '12px system-ui';
       ctx.textAlign = 'center';
-      ctx.fillText('Waveform preview loading / CORS restricted.', width / 2, height / 2);
+      ctx.fillText('Waveform preview unavailable / CORS restricted.', width / 2, height / 2);
       ctx.textAlign = 'left';
       return;
     }
 
     const { cue: activeCue } = getActiveOrClosestCue();
 
-    segments.forEach((s) => {
-      if (s.end < startSec || s.start > endSec) return;
-      if (activeCue && activeCue.id === s.id) return;
-
-      const cStartX = ((s.start - startSec) / currentWindowSpan) * width;
-      if (cStartX >= 0 && cStartX <= width) {
-        ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([2, 4]);
-        ctx.beginPath();
-        ctx.moveTo(cStartX, 0);
-        ctx.lineTo(cStartX, height);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-    });
-
+    // Cue Region Highlight (Clean block, without Green dashed in-point line/tag)
     if (activeCue) {
       const cueStartX = ((activeCue.start - startSec) / currentWindowSpan) * width;
       const cueEndX = ((activeCue.end - startSec) / currentWindowSpan) * width;
-
       const boxLeft = Math.max(0, cueStartX);
       const boxRight = Math.min(width, cueEndX);
       if (boxRight > boxLeft) {
-        ctx.fillStyle = (loopingSegmentIndex !== null) ? 'rgba(16, 185, 129, 0.16)' : 'rgba(56, 189, 248, 0.13)';
+        ctx.fillStyle = (loopingSegmentIndex !== null) ? 'rgba(16, 185, 129, 0.16)' : 'rgba(56, 189, 248, 0.12)';
         ctx.fillRect(boxLeft, 0, boxRight - boxLeft, height);
-      }
-
-      if (cueStartX >= 0 && cueStartX <= width) {
-        ctx.strokeStyle = '#10b981';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 4]);
-        ctx.beginPath();
-        ctx.moveTo(cueStartX, 0);
-        ctx.lineTo(cueStartX, height);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        ctx.fillStyle = '#10b981';
-        ctx.fillRect(cueStartX, 2, 60, 16);
-        ctx.fillStyle = '#040810';
-        ctx.font = 'bold 9px monospace';
-        ctx.fillText(`▶ In ${formatTime(activeCue.start)}`, cueStartX + 4, 13);
       }
     }
 
@@ -1558,14 +1484,6 @@
   btnPlayheadFwdFast.addEventListener('click', () => nudgePlayhead(0.5));
   window.addEventListener('resize', () => drawWaveform());
 
-  function handleQuickSetIn() {
-    const { idx } = getActiveOrClosestCue();
-    if (idx !== null) syncSegmentStart(idx);
-    else statusDiv.textContent = "No cue active at current playhead.";
-  }
-
-  btnSetInQuick.addEventListener('click', handleQuickSetIn);
-
   function updateLiveSubtitleStrip() {
     if (!segments.length) return;
     const cur = audioPlayer.currentTime;
@@ -1658,49 +1576,6 @@
     const s = Math.floor(sec % 60);
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }
-
-  window.syncSegmentStart = function(idx) {
-    const cur = parseFloat(audioPlayer.currentTime.toFixed(3));
-    const target = segments[idx];
-    if (!target || cur >= target.end - 0.08) return;
-
-    target.start = cur;
-    if (idx > 0) {
-      const prev = segments[idx - 1];
-      if (prev.end > target.start) {
-        prev.end = Math.max(prev.start + 0.08, target.start - 0.03);
-        recalculateMetrics(prev);
-      }
-    }
-
-    recalculateMetrics(target);
-    persistSessionLocal();
-    renderTranscript();
-    updateLiveSubtitleStrip();
-    drawWaveform();
-  };
-
-  window.nudgeCueStart = function(idx, delta) {
-    const target = segments[idx];
-    if (!target) return;
-    const newStart = Math.max(0, parseFloat((target.start + delta).toFixed(3)));
-    if (newStart >= target.end - 0.08) return;
-
-    target.start = newStart;
-    if (idx > 0) {
-      const prev = segments[idx - 1];
-      if (prev.end > target.start) {
-        prev.end = Math.max(prev.start + 0.08, target.start - 0.03);
-        recalculateMetrics(prev);
-      }
-    }
-
-    recalculateMetrics(target);
-    persistSessionLocal();
-    renderTranscript();
-    updateLiveSubtitleStrip();
-    drawWaveform();
-  };
 
   window.jumpToSegmentCueOnly = function(idx) {
     const seg = segments[idx];
@@ -1801,10 +1676,6 @@
             [${formatTime(seg.start)} - ${formatTime(seg.end)}]
           </span>
           <span class="pace-pill ${paceClass}">${seg.wpm} WPM | ${seg.cps} CPS</span>
-
-          <button class="btn-nudge" onclick="event.stopPropagation(); window.nudgeCueStart(${idx}, -0.1)">◀ -0.1s</button>
-          <button class="btn-sync" onclick="event.stopPropagation(); window.syncSegmentStart(${idx})">⏱ Set In</button>
-          <button class="btn-nudge" onclick="event.stopPropagation(); window.nudgeCueStart(${idx}, 0.1)">+0.1s ▶</button>
           <button class="btn-danger-sm" onclick="event.stopPropagation(); window.deleteSegment(${idx})" title="Delete cue">🗑️</button>
 
           <button class="btn-ctrl" style="padding: 2px 7px; font-size: 0.72rem; margin-left: auto;" onclick="event.stopPropagation(); window.playSegment(${idx})">▶ Play</button>
@@ -2006,9 +1877,6 @@
     if (e.code === 'Space') {
       e.preventDefault();
       audioPlayer.paused ? audioPlayer.play() : audioPlayer.pause();
-    } else if (e.key === 'i' || e.key === 'I') {
-      e.preventDefault();
-      handleQuickSetIn();
     } else if (e.key === 'j' || e.key === 'J') {
       audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 5);
     } else if (e.key === 'l' || e.key === 'L') {
@@ -2143,6 +2011,7 @@
     }
   }
 
+  // Session persistence including text
   function persistSessionLocal() {
     const key = getStorageKey();
     if (!key || !segments.length) return;
@@ -2150,6 +2019,7 @@
       id: s.id,
       start: s.start,
       end: s.end,
+      text: s.text || '', // Retains script phrase for cross-chapter CSV generation
       flagged: s.flagged === true,
       errorType: s.errorType || 'Mispronunciation',
       note: s.note || ''
@@ -2174,6 +2044,7 @@
         if (segments[index]) {
           if (item.start !== undefined) segments[index].start = item.start;
           if (item.end !== undefined) segments[index].end = item.end;
+          if (item.text) segments[index].text = item.text;
           segments[index].flagged = item.flagged === true;
           segments[index].errorType = item.errorType || 'Mispronunciation';
           segments[index].note = item.note || '';
@@ -2185,7 +2056,7 @@
 
   btnClearStorage.addEventListener('click', () => {
     const key = getStorageKey();
-    if (key && confirm(`Reset saved notes and retimed cues for "${currentTrackTitle}"?`)) {
+    if (key && confirm(`Reset saved notes and flags for "${currentTrackTitle}"?`)) {
       localStorage.removeItem(key);
       loadTrack(activeIndex);
     }
