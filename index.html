@@ -437,6 +437,7 @@
       font-weight: 600;
       white-space: nowrap;
       flex-shrink: 0;
+      transition: all 0.12s ease;
     }
     .filter-tab:hover { color: var(--text); }
     .filter-tab.active {
@@ -444,10 +445,36 @@
       border-color: var(--border);
       color: var(--accent);
     }
-    .filter-tab.rev-tab.active {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: var(--success);
+    /* Red 'Flagged' Button */
+    .filter-tab.flag-tab {
+      color: var(--danger);
+      border-color: rgba(244, 63, 94, 0.4);
+      background: rgba(244, 63, 94, 0.08);
+    }
+    .filter-tab.flag-tab:hover {
+      background: rgba(244, 63, 94, 0.16);
+      border-color: var(--danger);
+    }
+    .filter-tab.flag-tab.active {
+      background: var(--danger);
+      border-color: var(--danger);
+      color: #fff;
+    }
+    /* Green 'Revisions' Button */
+    .filter-tab.rev-tab {
       color: var(--success);
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .filter-tab.rev-tab:hover {
+      background: rgba(16, 185, 129, 0.16);
+      border-color: var(--success);
+    }
+    .filter-tab.rev-tab.active {
+      background: var(--success);
+      border-color: var(--success);
+      color: #0b1120;
+      font-weight: 700;
     }
     #status {
       font-size: 0.72rem;
@@ -520,8 +547,11 @@
       border-left: 4px solid var(--danger);
       background: rgba(244, 63, 94, 0.08);
     }
-    .segment.has-revision {
-      border-right: 4px solid var(--success);
+    /* When Revisions filter is active, change red vertical bar to green */
+    body.viewing-revisions .segment.flagged,
+    body.viewing-revisions .segment.has-revision {
+      border-left: 4px solid var(--success) !important;
+      background: rgba(16, 185, 129, 0.08) !important;
     }
     .seg-header {
       display: flex;
@@ -741,9 +771,12 @@
     <h3>Admin Verification</h3>
     <p>Enter the master admin password to configure this portal.</p>
     <input type="password" id="adminPassInput" placeholder="Master Password" autofocus>
+    <label style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:0.8rem; color:var(--muted); cursor:pointer; user-select:none;">
+      <input type="checkbox" id="adminRememberMe" style="cursor:pointer;"> Remember me on this device
+    </label>
     <button class="btn-primary" id="btnAdminVerify">Access Admin Panel</button>
     <div id="adminAuthError" class="modal-error">Incorrect master password.</div>
-    <button class="btn-secondary" id="btnCancelAdminAuth" style="margin-top:4px;">Cancel</button>
+    <button class="btn-secondary" id="btnCancelAdminAuth" style="margin-top:2px;">Cancel</button>
   </div>
 </div>
 
@@ -751,7 +784,7 @@
 <div id="adminModal" class="overlay-backdrop" style="display:none;">
   <div class="modal-box admin-mode">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3 style="display:flex; gap:8px; align-items:center;">⚙️️ Secret Admin: Portal Settings</h3>
+      <h3 style="display:flex; gap:8px; align-items:center;">⚙ Secret Admin: Portal Settings</h3>
       <button class="btn-secondary" id="btnCloseAdmin" style="padding:4px 8px;">✕</button>
     </div>
 
@@ -783,7 +816,8 @@
       <textarea id="adminTrackInput" spellcheck="false" placeholder="https://www.dropbox.com/scl/fi/hd5rtkbnsv8zqpghybm1v/Chapter-1.mp3?rlkey=pej9w8uhcq3sn1blke08omsyh&st=rcw47ge5&dl=0&#10;https://www.dropbox.com/scl/fi/lf2grph87sg6nzu4gmxxc/Chapter-2.mp3?rlkey=2b7vpuh779mvckns2gxzz23dy&st=pb7p805x&dl=0"></textarea>
     </div>
 
-    <div style="display:flex; gap:10px; justify-content: flex-end; margin-top:6px;">
+    <div style="display:flex; gap:10px; justify-content: flex-end; margin-top:6px; align-items:center;">
+      <button class="btn-secondary" id="btnForgetAdmin" style="margin-right:auto; font-size:0.76rem; color:#fda4af; border-color:rgba(244,63,94,0.3);" title="Clear saved admin authentication">Forget Admin Auth</button>
       <button class="btn-secondary" id="btnResetDefault">Reset to Defaults</button>
       <button class="btn-primary" id="btnSaveAdminSettings">Save & Apply</button>
     </div>
@@ -808,7 +842,7 @@
     <div class="filter-bar">
       <span style="font-weight: 700; color: var(--muted); margin-right: 2px;">VIEW:</span>
       <button class="filter-tab active" data-filter="all">All Cues (<span id="countAll">0</span>)</button>
-      <button class="filter-tab" data-filter="flagged">Flagged Only (<span id="countFlagged">0</span>)</button>
+      <button class="filter-tab flag-tab" data-filter="flagged">Flagged (<span id="countFlagged">0</span>)</button>
       <button class="filter-tab rev-tab" data-filter="revisions">Revisions (<span id="countRevisions">0</span>)</button>
       
       <div id="status">Ready.</div>
@@ -960,9 +994,11 @@
   // ==========================================================
   const adminAuthModal = document.getElementById('adminAuthModal');
   const adminPassInput = document.getElementById('adminPassInput');
+  const adminRememberMe = document.getElementById('adminRememberMe');
   const btnAdminVerify = document.getElementById('btnAdminVerify');
   const adminAuthError = document.getElementById('adminAuthError');
   const btnCancelAdminAuth = document.getElementById('btnCancelAdminAuth');
+  const btnForgetAdmin = document.getElementById('btnForgetAdmin');
 
   const adminModal = document.getElementById('adminModal');
   const btnCloseAdmin = document.getElementById('btnCloseAdmin');
@@ -1036,14 +1072,23 @@
   }
 
   function openAdminChallenge() {
+    // Check if remember me was already saved
+    if (localStorage.getItem(getScopedKey('qc_admin_remembered')) === 'true') {
+      openAdminPanel();
+      return;
+    }
     adminAuthError.style.display = 'none';
     adminPassInput.value = '';
+    adminRememberMe.checked = false;
     adminAuthModal.style.display = 'flex';
     adminPassInput.focus();
   }
 
   function verifyAdminLogin() {
     if (adminPassInput.value.trim() === MASTER_ADMIN_PASSWORD) {
+      if (adminRememberMe.checked) {
+        localStorage.setItem(getScopedKey('qc_admin_remembered'), 'true');
+      }
       adminAuthModal.style.display = 'none';
       openAdminPanel();
     } else {
@@ -1059,6 +1104,11 @@
   });
   btnCancelAdminAuth.addEventListener('click', () => { adminAuthModal.style.display = 'none'; });
   btnAdminTrigger.addEventListener('click', (e) => { e.preventDefault(); openAdminChallenge(); });
+
+  btnForgetAdmin.addEventListener('click', () => {
+    localStorage.removeItem(getScopedKey('qc_admin_remembered'));
+    alert('Admin authentication remembered status cleared.');
+  });
 
   let titleClicks = 0;
   let clickTimer = null;
@@ -1717,6 +1767,9 @@
   function renderTranscript() {
     transcriptDiv.innerHTML = '';
     currentActiveId = null;
+
+    // Toggle document class for revision mode to turn the left bar green
+    document.body.classList.toggle('viewing-revisions', activeFilter === 'revisions');
 
     segments.forEach((seg, idx) => {
       const hasRev = Boolean(seg.revision && seg.revision.trim().length > 0);
