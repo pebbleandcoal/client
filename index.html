@@ -271,7 +271,7 @@
       font-size: 0.68rem;
       font-family: monospace;
       color: var(--muted);
-      max-width: 250px;
+      max-width: 260px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -547,7 +547,7 @@
       border-left: 4px solid var(--danger);
       background: rgba(244, 63, 94, 0.08);
     }
-    /* When viewing revisions filter, switch the vertical bar to green */
+    /* When viewing revisions filter, switch the vertical accent bar to emerald green */
     body.viewing-revisions .segment.flagged,
     body.viewing-revisions .segment.has-revision {
       border-left: 4px solid var(--success) !important;
@@ -709,7 +709,7 @@
       font-size: 0.82rem;
       line-height: 1.5;
       resize: vertical;
-      min-height: 170px;
+      min-height: 150px;
       white-space: pre;
     }
     .admin-upload-card {
@@ -801,7 +801,19 @@
       <span style="font-size:0.75rem; color:var(--muted);">When empty, reviewers access the portal directly without passwords.</span>
     </div>
 
-    <!-- Admin Master CSV Panel (Import & Download to Local Disk) -->
+    <!-- GitHub Direct Cloud Sync (Option 2) -->
+    <div class="admin-upload-card" style="margin-top:4px; border-color: rgba(56, 189, 248, 0.4);">
+      <label style="font-size:0.85rem; font-weight:700; color:var(--accent);">☁ GitHub Auto-Commit Sync (Option 2):</label>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+        <input type="text" id="adminGhRepo" placeholder="GitHub Repo (e.g. username/repo)">
+        <input type="password" id="adminGhToken" placeholder="GitHub Fine-Grained Token">
+      </div>
+      <span style="font-size:0.74rem; color:var(--muted); font-family:monospace;">
+        When configured, every client flag or revision automatically commits directly to the GitHub repo root!
+      </span>
+    </div>
+
+    <!-- Master CSV Sheet (Upload & Download to Local Disk) -->
     <div class="admin-upload-card" style="margin-top:4px;">
       <label style="font-size:0.85rem; font-weight:700; color:var(--success);">📥 Master Retake CSV Sheet Operations:</label>
       <div class="admin-upload-row">
@@ -860,11 +872,11 @@
     <!-- Action Bar -->
     <div class="compact-action-bar" id="compactActionBar">
       <span class="bar-section-label">AUTO-SAVE:</span>
-      <button class="btn-xs" id="btnLinkCsvFile" style="border-color: rgba(245, 158, 11, 0.4); color: var(--warning);" title="Direct root auto-save to Master_Project_Retake_Sheet.csv alongside index.html">
+      <button class="btn-xs" id="btnLinkCsvFile" style="border-color: rgba(245, 158, 11, 0.4); color: var(--warning);" title="Direct auto-sync to Master_Project_Retake_Sheet.csv">
         📋 CSV Sync
       </button>
 
-      <span id="diskSaveStatus" title="Status of root folder sync"></span>
+      <span id="diskSaveStatus" title="Status of root folder / GitHub sync"></span>
 
       <span class="bar-divider"></span>
 
@@ -1016,6 +1028,8 @@
   const adminModal = document.getElementById('adminModal');
   const btnCloseAdmin = document.getElementById('btnCloseAdmin');
   const adminClientPassSetting = document.getElementById('adminClientPassSetting');
+  const adminGhRepo = document.getElementById('adminGhRepo');
+  const adminGhToken = document.getElementById('adminGhToken');
   const adminTrackInput = document.getElementById('adminTrackInput');
   const btnSaveAdminSettings = document.getElementById('btnSaveAdminSettings');
   const btnResetDefault = document.getElementById('btnResetDefault');
@@ -1141,6 +1155,8 @@
 
   function openAdminPanel() {
     adminClientPassSetting.value = getClientPassword();
+    adminGhRepo.value = localStorage.getItem(getScopedKey('qc_gh_repo')) || '';
+    adminGhToken.value = localStorage.getItem(getScopedKey('qc_gh_token')) || '';
     adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
     adminCsvFeedback.textContent = "Upload CSV or download complete project sheet directly to disk.";
     adminCsvFeedback.style.color = "var(--muted)";
@@ -1156,6 +1172,14 @@
     } else {
       localStorage.removeItem(getScopedKey('qc_client_password'));
     }
+
+    const ghRepoVal = adminGhRepo.value.trim();
+    const ghTokenVal = adminGhToken.value.trim();
+    if (ghRepoVal) localStorage.setItem(getScopedKey('qc_gh_repo'), ghRepoVal);
+    else localStorage.removeItem(getScopedKey('qc_gh_repo'));
+
+    if (ghTokenVal) localStorage.setItem(getScopedKey('qc_gh_token'), ghTokenVal);
+    else localStorage.removeItem(getScopedKey('qc_gh_token'));
 
     const rawLines = adminTrackInput.value.trim().split('\n').map(l => l.trim()).filter(Boolean);
     const newTracks = [];
@@ -1183,7 +1207,7 @@
     }
 
     adminModal.style.display = 'none';
-    alert(`Saved ${newTracks.length} tracks successfully!`);
+    alert(`Saved settings and ${newTracks.length} tracks successfully!`);
     renderTrackGrid();
     loadTrack(0);
   });
@@ -1192,6 +1216,8 @@
     if (confirm('Reset to default chapters and clear passcode?')) {
       localStorage.removeItem(getScopedKey('qc_custom_tracks'));
       localStorage.removeItem(getScopedKey('qc_client_password'));
+      localStorage.removeItem(getScopedKey('qc_gh_repo'));
+      localStorage.removeItem(getScopedKey('qc_gh_token'));
       TRACKS = DEFAULT_TRACKS;
       adminModal.style.display = 'none';
       renderTrackGrid();
@@ -1804,7 +1830,7 @@
       if (seg.wpm > 185) paceClass = 'pace-fast';
       else if (seg.wpm < 100) paceClass = 'pace-slow';
 
-      // Only display the Revision field under the 'revisions' filter
+      // Strictly only display the Revision field under the 'revisions' filter
       const showRevisionBox = (activeFilter === 'revisions');
       const readOnlyAttr = isAdmin ? '' : 'readonly';
       const readOnlyNotice = !isAdmin ? ' (Admin Read-Only: Log in via Admin with Remember Me to edit)' : '';
@@ -2121,7 +2147,7 @@
   }
 
   // ==========================================================
-  // 4. CSV ROOT SYNC & PARSER
+  // 4. CSV GITHUB API COMMIT & PARSER
   // ==========================================================
   function parseCsvRecords(text) {
     const rows = [];
@@ -2225,24 +2251,64 @@
     }
   }
 
-  // Auto-sync specifically to the root directory next to index.html
+  // Auto-sync via GitHub REST API if configured, otherwise caches locally
   async function flushCsvToRoot() {
     const csvData = buildAllTracksCsvString();
     localStorage.setItem(getScopedKey('qc_root_master_csv'), csvData);
 
-    try {
-      const res = await fetch('Master_Project_Retake_Sheet.csv', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'text/csv' },
-        body: csvData
-      });
+    const ghRepo = localStorage.getItem(getScopedKey('qc_gh_repo'));
+    const ghToken = localStorage.getItem(getScopedKey('qc_gh_token'));
+
+    if (ghRepo && ghToken) {
+      diskSaveStatus.style.color = 'var(--warning)';
+      diskSaveStatus.textContent = 'Pushing to GitHub...';
+
+      try {
+        const apiUrl = `https://api.github.com/repos/${ghRepo}/contents/Master_Project_Retake_Sheet.csv`;
+        // Fetch current SHA
+        let sha = null;
+        const getRes = await fetch(apiUrl, {
+          headers: {
+            'Authorization': `Bearer ${ghToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        if (getRes.ok) {
+          const fileMeta = await getRes.json();
+          sha = fileMeta.sha;
+        }
+
+        // Commit updated file
+        const putRes = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${ghToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: 'Auto-update retake and revision sheet [QC Studio]',
+            content: btoa(unescape(encodeURIComponent(csvData))),
+            sha: sha || undefined
+          })
+        });
+
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (putRes.ok) {
+          diskSaveStatus.style.color = 'var(--success)';
+          diskSaveStatus.textContent = `GitHub Synced ${timeStr}`;
+        } else {
+          diskSaveStatus.style.color = 'var(--danger)';
+          diskSaveStatus.textContent = 'GitHub Push Failed';
+        }
+      } catch (err) {
+        diskSaveStatus.style.color = 'var(--danger)';
+        diskSaveStatus.textContent = 'GitHub Sync Error';
+      }
+    } else {
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       diskSaveStatus.style.color = 'var(--success)';
-      diskSaveStatus.textContent = res.ok ? `Root saved ${timeStr}` : `Root cached ${timeStr}`;
-    } catch(err) {
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      diskSaveStatus.style.color = 'var(--success)';
-      diskSaveStatus.textContent = `Root cached ${timeStr}`;
+      diskSaveStatus.textContent = `Cached Locally ${timeStr}`;
     }
   }
 
@@ -2268,7 +2334,7 @@
     localStorage.setItem(key, JSON.stringify(payload));
 
     clearTimeout(autoSaveTimeout);
-    autoSaveTimeout = setTimeout(flushCsvToRoot, 500);
+    autoSaveTimeout = setTimeout(flushCsvToRoot, 1000);
   }
 
   function loadSession() {
