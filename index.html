@@ -673,8 +673,23 @@
       font-size: 0.82rem;
       line-height: 1.5;
       resize: vertical;
-      min-height: 200px;
+      min-height: 170px;
       white-space: pre;
+    }
+    .admin-upload-card {
+      background: #090d16;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .admin-upload-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
     }
     .btn-primary {
       background: #0284c7;
@@ -736,23 +751,39 @@
 <div id="adminModal" class="overlay-backdrop" style="display:none;">
   <div class="modal-box admin-mode">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Portal Settings</h3>
+      <h3 style="display:flex; gap:8px; align-items:center;">⚙️️ Secret Admin: Portal Settings</h3>
       <button class="btn-secondary" id="btnCloseAdmin" style="padding:4px 8px;">✕</button>
     </div>
 
+    <!-- Client Passcode -->
     <div style="display:flex; flex-direction:column; gap:6px;">
       <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Client Passcode (Leave blank for public access):</label>
       <input type="text" id="adminClientPassSetting" placeholder="e.g. client2026 (blank = public access)">
       <span style="font-size:0.75rem; color:var(--muted);">When empty, reviewers access the portal directly without passwords.</span>
     </div>
 
-    <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+    <!-- Upload CSV in Admin Panel -->
+    <div class="admin-upload-card" style="margin-top:4px;">
+      <label style="font-size:0.85rem; font-weight:700; color:var(--success);">📥 Upload Master Retake CSV Sheet:</label>
+      <div class="admin-upload-row">
+        <input type="file" id="adminCsvFileInput" accept=".csv,text/csv" style="flex:1; padding:6px 10px; font-size:0.82rem; cursor:pointer;">
+        <button class="btn-secondary" id="btnAdminApplyCsv" style="color:var(--success); border-color:rgba(16, 185, 129, 0.4); padding:6px 14px; font-weight:600;">
+          Import & Sync
+        </button>
+      </div>
+      <span id="adminCsvFeedback" style="font-size:0.74rem; color:var(--muted); font-family:monospace;">
+        Select Master_Project_Retake_Sheet.csv to instantly load all client flags and revisions.
+      </span>
+    </div>
+
+    <!-- Dropbox Tracks & Transcripts -->
+    <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
       <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Dropbox Tracks & Transcripts:</label>
-      <p style="margin:0;">Paste Dropbox links directly (one per line). Titles and matching VTT filenames are detected automatically:</p>
+      <p style="margin:0; font-size:0.76rem; color:var(--muted);">Paste Dropbox links directly (one per line). Titles and matching VTT filenames are detected automatically:</p>
       <textarea id="adminTrackInput" spellcheck="false" placeholder="https://www.dropbox.com/scl/fi/hd5rtkbnsv8zqpghybm1v/Chapter-1.mp3?rlkey=pej9w8uhcq3sn1blke08omsyh&st=rcw47ge5&dl=0&#10;https://www.dropbox.com/scl/fi/lf2grph87sg6nzu4gmxxc/Chapter-2.mp3?rlkey=2b7vpuh779mvckns2gxzz23dy&st=pb7p805x&dl=0"></textarea>
     </div>
 
-    <div style="display:flex; gap:10px; justify-content: flex-end; margin-top:8px;">
+    <div style="display:flex; gap:10px; justify-content: flex-end; margin-top:6px;">
       <button class="btn-secondary" id="btnResetDefault">Reset to Defaults</button>
       <button class="btn-primary" id="btnSaveAdminSettings">Save & Apply</button>
     </div>
@@ -796,8 +827,8 @@
 
       <span class="bar-section-label">EXPORTS:</span>
       <button class="btn-xs" id="btnExportTxt" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">Notes (.txt)</button>
-      <button class="btn-xs" id="btnExportCsv" title="Export flagged errors from current chapter">Retake CSV (Current)</button>
-      <button class="btn-xs" id="btnExportAllCsv" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Export flagged errors across all project chapters">Retake CSV (All Files)</button>
+      <button class="btn-xs" id="btnExportCsv" title="Export flagged errors and revisions from current chapter">Retake CSV (Current)</button>
+      <button class="btn-xs" id="btnExportAllCsv" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Export flagged errors and revisions across all project chapters">Retake CSV (All Files)</button>
 
       <span class="bar-divider"></span>
 
@@ -942,6 +973,10 @@
   const appTitle = document.getElementById('appTitle');
   const btnAdminTrigger = document.getElementById('btnAdminTrigger');
 
+  const adminCsvFileInput = document.getElementById('adminCsvFileInput');
+  const btnAdminApplyCsv = document.getElementById('btnAdminApplyCsv');
+  const adminCsvFeedback = document.getElementById('adminCsvFeedback');
+
   const DEFAULT_TRACKS = [
     { 
       title: "Chapter 1", 
@@ -1042,6 +1077,8 @@
   function openAdminPanel() {
     adminClientPassSetting.value = getClientPassword();
     adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
+    adminCsvFeedback.textContent = "Select Master_Project_Retake_Sheet.csv to instantly load all client flags and revisions.";
+    adminCsvFeedback.style.color = "var(--muted)";
     adminModal.style.display = 'flex';
   }
 
@@ -1095,6 +1132,39 @@
       renderTrackGrid();
       loadTrack(0);
     }
+  });
+
+  // Admin CSV Upload Handler
+  btnAdminApplyCsv.addEventListener('click', () => {
+    const file = adminCsvFileInput.files[0];
+    if (!file) {
+      adminCsvFeedback.style.color = "var(--danger)";
+      adminCsvFeedback.textContent = "Please select a .csv file first.";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const csvText = e.target.result;
+      const count = ingestRetakeCsvText(csvText);
+      if (count > 0) {
+        adminCsvFeedback.style.color = "var(--success)";
+        adminCsvFeedback.textContent = `Successfully imported ${count} entries!`;
+        loadSession();
+        renderTranscript();
+        updateFilterCounts();
+        diskSaveStatus.style.color = 'var(--success)';
+        diskSaveStatus.textContent = `Imported (${file.name})`;
+      } else {
+        adminCsvFeedback.style.color = "var(--warning)";
+        adminCsvFeedback.textContent = "No matching cues or rows found in file.";
+      }
+    };
+    reader.onerror = () => {
+      adminCsvFeedback.style.color = "var(--danger)";
+      adminCsvFeedback.textContent = "Error reading CSV file.";
+    };
+    reader.readAsText(file);
   });
 
   // ==========================================================
@@ -1672,7 +1742,7 @@
           </span>
           <span class="pace-pill ${paceClass}">${seg.wpm} WPM | ${seg.cps} CPS</span>
           ${hasRev ? `<span class="revision-badge" title="Revision logged">✓ Revised</span>` : ''}
-          <button class="btn-danger-sm" onclick="event.stopPropagation(); window.deleteSegment(${idx})" title="Delete cue">🗑️️</button>
+          <button class="btn-danger-sm" onclick="event.stopPropagation(); window.deleteSegment(${idx})" title="Delete cue">🗑</button>
 
           <button class="btn-ctrl" style="padding: 2px 7px; font-size: 0.72rem; margin-left: auto;" onclick="event.stopPropagation(); window.playSegment(${idx})">▶ Play</button>
           <button class="btn-ctrl ${isThisLooping ? 'active-loop' : ''}" style="padding: 2px 7px; font-size: 0.72rem;" onclick="event.stopPropagation(); window.toggleLoopSegment(${idx})">
@@ -1969,7 +2039,7 @@
   }
 
   // ==========================================================
-  // 4. AUTO-LOAD DISK CSV & SYNC
+  // 4. CSV PARSER & SYNC (AUTOMATIC & ADMIN PANEL)
   // ==========================================================
   function parseCsvRecords(text) {
     const rows = [];
@@ -1999,69 +2069,75 @@
     return rows;
   }
 
+  function ingestRetakeCsvText(csvText) {
+    if (!csvText || !csvText.trim()) return 0;
+    const records = parseCsvRecords(csvText.trim());
+    if (records.length <= 1) return 0;
+
+    let totalEntries = 0;
+    const recordsByTrack = {};
+    for (let i = 1; i < records.length; i++) {
+      const r = records[i];
+      if (!r || r.length < 5) continue;
+      const trackTitle = (r[0] || '').trim();
+      if (!recordsByTrack[trackTitle]) recordsByTrack[trackTitle] = [];
+      recordsByTrack[trackTitle].push({
+        cueNum: parseInt(r[1], 10),
+        timeStart: (r[2] || '').trim(),
+        timeEnd: (r[3] || '').trim(),
+        issueType: (r[4] || '').trim(),
+        phrase: (r[5] || '').trim(),
+        note: (r[6] || '').trim(),
+        revision: (r[7] || '').trim()
+      });
+      totalEntries++;
+    }
+
+    Object.keys(recordsByTrack).forEach(tTitle => {
+      const key = getStorageKeyForTrack(tTitle);
+      const existingRaw = localStorage.getItem(key);
+      let curData = [];
+      if (existingRaw) {
+        try { curData = JSON.parse(existingRaw); } catch(e) {}
+      }
+
+      const entries = recordsByTrack[tTitle];
+      entries.forEach(ent => {
+        const matchIdx = curData.findIndex(s => (s.id + 1) === ent.cueNum || (s.text && ent.phrase && s.text.includes(ent.phrase)));
+        if (matchIdx !== -1) {
+          curData[matchIdx].flagged = true;
+          curData[matchIdx].errorType = ent.issueType || curData[matchIdx].errorType;
+          curData[matchIdx].note = ent.note || curData[matchIdx].note;
+          curData[matchIdx].revision = ent.revision || curData[matchIdx].revision;
+        } else {
+          curData.push({
+            id: (ent.cueNum ? ent.cueNum - 1 : curData.length),
+            start: parseSeconds(ent.timeStart),
+            end: parseSeconds(ent.timeEnd),
+            text: ent.phrase,
+            flagged: true,
+            errorType: ent.issueType || 'Mispronunciation',
+            note: ent.note || '',
+            revision: ent.revision || ''
+          });
+        }
+      });
+      localStorage.setItem(key, JSON.stringify(curData));
+    });
+
+    return totalEntries;
+  }
+
   async function tryAutoLoadFolderCsv() {
     try {
       const res = await fetch('Master_Project_Retake_Sheet.csv', { cache: 'no-store' });
       if (!res.ok) return;
       const csvText = await res.text();
-      if (!csvText || !csvText.trim()) return;
-
-      const records = parseCsvRecords(csvText.trim());
-      if (records.length <= 1) return;
-
-      // Group records by track
-      const recordsByTrack = {};
-      for (let i = 1; i < records.length; i++) {
-        const r = records[i];
-        if (!r || r.length < 5) continue;
-        const trackTitle = (r[0] || '').trim();
-        if (!recordsByTrack[trackTitle]) recordsByTrack[trackTitle] = [];
-        recordsByTrack[trackTitle].push({
-          cueNum: parseInt(r[1], 10),
-          timeStart: (r[2] || '').trim(),
-          timeEnd: (r[3] || '').trim(),
-          issueType: (r[4] || '').trim(),
-          phrase: (r[5] || '').trim(),
-          note: (r[6] || '').trim(),
-          revision: (r[7] || '').trim()
-        });
+      const count = ingestRetakeCsvText(csvText);
+      if (count > 0) {
+        diskSaveStatus.style.color = 'var(--success)';
+        diskSaveStatus.textContent = 'Auto-loaded disk CSV';
       }
-
-      // Persist into localStorage for all tracks found
-      Object.keys(recordsByTrack).forEach(tTitle => {
-        const key = getStorageKeyForTrack(tTitle);
-        const existingRaw = localStorage.getItem(key);
-        let curData = [];
-        if (existingRaw) {
-          try { curData = JSON.parse(existingRaw); } catch(e) {}
-        }
-
-        const entries = recordsByTrack[tTitle];
-        entries.forEach(ent => {
-          const matchIdx = curData.findIndex(s => (s.id + 1) === ent.cueNum || (s.text && ent.phrase && s.text.includes(ent.phrase)));
-          if (matchIdx !== -1) {
-            curData[matchIdx].flagged = true;
-            curData[matchIdx].errorType = ent.issueType || curData[matchIdx].errorType;
-            curData[matchIdx].note = ent.note || curData[matchIdx].note;
-            curData[matchIdx].revision = ent.revision || curData[matchIdx].revision;
-          } else {
-            curData.push({
-              id: (ent.cueNum ? ent.cueNum - 1 : curData.length),
-              start: parseSeconds(ent.timeStart),
-              end: parseSeconds(ent.timeEnd),
-              text: ent.phrase,
-              flagged: true,
-              errorType: ent.issueType || 'Mispronunciation',
-              note: ent.note || '',
-              revision: ent.revision || ''
-            });
-          }
-        });
-        localStorage.setItem(key, JSON.stringify(curData));
-      });
-
-      diskSaveStatus.style.color = 'var(--success)';
-      diskSaveStatus.textContent = 'Auto-loaded disk CSV';
     } catch(err) {
       console.warn('Auto CSV load note:', err);
     }
