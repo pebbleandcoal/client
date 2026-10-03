@@ -271,7 +271,7 @@
       font-size: 0.68rem;
       font-family: monospace;
       color: var(--muted);
-      max-width: 260px;
+      max-width: 280px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -547,7 +547,7 @@
       border-left: 4px solid var(--danger);
       background: rgba(244, 63, 94, 0.08);
     }
-    /* When viewing revisions filter, switch the vertical accent bar to emerald green */
+    /* In revisions view, vertical bar displays emerald green */
     body.viewing-revisions .segment.flagged,
     body.viewing-revisions .segment.has-revision {
       border-left: 4px solid var(--success) !important;
@@ -801,15 +801,15 @@
       <span style="font-size:0.75rem; color:var(--muted);">When empty, reviewers access the portal directly without passwords.</span>
     </div>
 
-    <!-- GitHub Direct Cloud Sync (Option 2) -->
+    <!-- GitHub Direct Cloud Sync (Subfolder Plug-and-Play) -->
     <div class="admin-upload-card" style="margin-top:4px; border-color: rgba(56, 189, 248, 0.4);">
-      <label style="font-size:0.85rem; font-weight:700; color:var(--accent);">☁ GitHub Auto-Commit Sync (Option 2):</label>
+      <label style="font-size:0.85rem; font-weight:700; color:var(--accent);">☁ GitHub Auto-Commit Sync:</label>
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
         <input type="text" id="adminGhRepo" placeholder="GitHub Repo (e.g. username/repo)">
         <input type="password" id="adminGhToken" placeholder="GitHub Fine-Grained Token">
       </div>
-      <span style="font-size:0.74rem; color:var(--muted); font-family:monospace;">
-        When configured, every client flag or revision automatically commits directly to the GitHub repo root!
+      <span id="adminSubfolderNotice" style="font-size:0.74rem; color:var(--muted); font-family:monospace;">
+        Detecting folder path...
       </span>
     </div>
 
@@ -872,11 +872,11 @@
     <!-- Action Bar -->
     <div class="compact-action-bar" id="compactActionBar">
       <span class="bar-section-label">AUTO-SAVE:</span>
-      <button class="btn-xs" id="btnLinkCsvFile" style="border-color: rgba(245, 158, 11, 0.4); color: var(--warning);" title="Direct auto-sync to Master_Project_Retake_Sheet.csv">
+      <button class="btn-xs" id="btnLinkCsvFile" style="border-color: rgba(245, 158, 11, 0.4); color: var(--warning);" title="Direct auto-sync to Master_Project_Retake_Sheet.csv in this folder">
         📋 CSV Sync
       </button>
 
-      <span id="diskSaveStatus" title="Status of root folder / GitHub sync"></span>
+      <span id="diskSaveStatus" title="Status of folder / GitHub sync"></span>
 
       <span class="bar-divider"></span>
 
@@ -961,10 +961,11 @@
 
 <script>
   // ==========================================================
-  // 1. PATH SCOPING & AUTHENTICATION
+  // 1. PATH SCOPING, SUBFOLDER DETECTION & AUTHENTICATION
   // ==========================================================
   const MASTER_ADMIN_PASSWORD = "admin777";
   const PATH_KEY = window.location.pathname.replace(/index\.html$/i, '');
+  
   function getScopedKey(name) {
     return `${name}_${PATH_KEY}`;
   }
@@ -975,6 +976,16 @@
 
   function isAdminAuthenticated() {
     return localStorage.getItem(getScopedKey('qc_admin_remembered')) === 'true';
+  }
+
+  // Derive target file path relative to repo root for GitHub API commits
+  function getTargetCsvFilePath() {
+    let subfolder = window.location.pathname
+      .replace(/^\/[^\/]+\//, '')      // Strip GitHub repo name
+      .replace(/index\.html$/i, '')    // Strip index.html
+      .replace(/^\/+|\/+$/g, '');      // Trim extra slashes
+    
+    return subfolder ? `${subfolder}/Master_Project_Retake_Sheet.csv` : `Master_Project_Retake_Sheet.csv`;
   }
 
   const authOverlay = document.getElementById('authOverlay');
@@ -1030,6 +1041,7 @@
   const adminClientPassSetting = document.getElementById('adminClientPassSetting');
   const adminGhRepo = document.getElementById('adminGhRepo');
   const adminGhToken = document.getElementById('adminGhToken');
+  const adminSubfolderNotice = document.getElementById('adminSubfolderNotice');
   const adminTrackInput = document.getElementById('adminTrackInput');
   const btnSaveAdminSettings = document.getElementById('btnSaveAdminSettings');
   const btnResetDefault = document.getElementById('btnResetDefault');
@@ -1155,8 +1167,9 @@
 
   function openAdminPanel() {
     adminClientPassSetting.value = getClientPassword();
-    adminGhRepo.value = localStorage.getItem(getScopedKey('qc_gh_repo')) || '';
-    adminGhToken.value = localStorage.getItem(getScopedKey('qc_gh_token')) || '';
+    adminGhRepo.value = localStorage.getItem('qc_gh_repo_shared') || localStorage.getItem(getScopedKey('qc_gh_repo')) || '';
+    adminGhToken.value = localStorage.getItem('qc_gh_token_shared') || localStorage.getItem(getScopedKey('qc_gh_token')) || '';
+    adminSubfolderNotice.textContent = `Target GitHub path: /${getTargetCsvFilePath()}`;
     adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
     adminCsvFeedback.textContent = "Upload CSV or download complete project sheet directly to disk.";
     adminCsvFeedback.style.color = "var(--muted)";
@@ -1175,11 +1188,21 @@
 
     const ghRepoVal = adminGhRepo.value.trim();
     const ghTokenVal = adminGhToken.value.trim();
-    if (ghRepoVal) localStorage.setItem(getScopedKey('qc_gh_repo'), ghRepoVal);
-    else localStorage.removeItem(getScopedKey('qc_gh_repo'));
+    if (ghRepoVal) {
+      localStorage.setItem(getScopedKey('qc_gh_repo'), ghRepoVal);
+      localStorage.setItem('qc_gh_repo_shared', ghRepoVal);
+    } else {
+      localStorage.removeItem(getScopedKey('qc_gh_repo'));
+      localStorage.removeItem('qc_gh_repo_shared');
+    }
 
-    if (ghTokenVal) localStorage.setItem(getScopedKey('qc_gh_token'), ghTokenVal);
-    else localStorage.removeItem(getScopedKey('qc_gh_token'));
+    if (ghTokenVal) {
+      localStorage.setItem(getScopedKey('qc_gh_token'), ghTokenVal);
+      localStorage.setItem('qc_gh_token_shared', ghTokenVal);
+    } else {
+      localStorage.removeItem(getScopedKey('qc_gh_token'));
+      localStorage.removeItem('qc_gh_token_shared');
+    }
 
     const rawLines = adminTrackInput.value.trim().split('\n').map(l => l.trim()).filter(Boolean);
     const newTracks = [];
@@ -2147,7 +2170,7 @@
   }
 
   // ==========================================================
-  // 4. CSV GITHUB API COMMIT & PARSER
+  // 4. CSV GITHUB API COMMIT & PARSER (DYNAMIC SUBFOLDERS)
   // ==========================================================
   function parseCsvRecords(text) {
     const rows = [];
@@ -2244,27 +2267,29 @@
       const count = ingestRetakeCsvText(csvText);
       if (count > 0) {
         diskSaveStatus.style.color = 'var(--success)';
-        diskSaveStatus.textContent = 'Auto-loaded root CSV';
+        diskSaveStatus.textContent = 'Auto-loaded folder CSV';
       }
     } catch(err) {
       console.warn('Auto CSV load note:', err);
     }
   }
 
-  // Auto-sync via GitHub REST API if configured, otherwise caches locally
+  // Auto-sync via GitHub REST API scoped dynamically to this subfolder
   async function flushCsvToRoot() {
     const csvData = buildAllTracksCsvString();
     localStorage.setItem(getScopedKey('qc_root_master_csv'), csvData);
 
-    const ghRepo = localStorage.getItem(getScopedKey('qc_gh_repo'));
-    const ghToken = localStorage.getItem(getScopedKey('qc_gh_token'));
+    const ghRepo = localStorage.getItem(getScopedKey('qc_gh_repo')) || localStorage.getItem('qc_gh_repo_shared');
+    const ghToken = localStorage.getItem(getScopedKey('qc_gh_token')) || localStorage.getItem('qc_gh_token_shared');
 
     if (ghRepo && ghToken) {
       diskSaveStatus.style.color = 'var(--warning)';
       diskSaveStatus.textContent = 'Pushing to GitHub...';
 
       try {
-        const apiUrl = `https://api.github.com/repos/${ghRepo}/contents/Master_Project_Retake_Sheet.csv`;
+        const targetPath = getTargetCsvFilePath();
+        const apiUrl = `https://api.github.com/repos/${ghRepo}/contents/${targetPath}`;
+        
         // Fetch current SHA
         let sha = null;
         const getRes = await fetch(apiUrl, {
@@ -2287,7 +2312,7 @@
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            message: 'Auto-update retake and revision sheet [QC Studio]',
+            message: `Auto-update retake sheet for ${targetPath} [QC Studio]`,
             content: btoa(unescape(encodeURIComponent(csvData))),
             sha: sha || undefined
           })
