@@ -271,7 +271,7 @@
       font-size: 0.68rem;
       font-family: monospace;
       color: var(--muted);
-      max-width: 220px;
+      max-width: 250px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -547,7 +547,7 @@
       border-left: 4px solid var(--danger);
       background: rgba(244, 63, 94, 0.08);
     }
-    /* When Revisions filter is active, change red vertical bar to green */
+    /* When viewing revisions filter, switch the vertical bar to green */
     body.viewing-revisions .segment.flagged,
     body.viewing-revisions .segment.has-revision {
       border-left: 4px solid var(--success) !important;
@@ -662,6 +662,12 @@
     .revision-box {
       border: 1px solid rgba(16, 185, 129, 0.35) !important;
       background: rgba(6, 25, 18, 0.4) !important;
+    }
+    .revision-box:read-only {
+      opacity: 0.75;
+      background: rgba(15, 23, 42, 0.5) !important;
+      border-color: var(--border) !important;
+      cursor: not-allowed;
     }
     .overlay-backdrop {
       position: fixed;
@@ -795,17 +801,20 @@
       <span style="font-size:0.75rem; color:var(--muted);">When empty, reviewers access the portal directly without passwords.</span>
     </div>
 
-    <!-- Upload CSV in Admin Panel -->
+    <!-- Admin Master CSV Panel (Import & Download to Local Disk) -->
     <div class="admin-upload-card" style="margin-top:4px;">
-      <label style="font-size:0.85rem; font-weight:700; color:var(--success);">📥 Upload Master Retake CSV Sheet:</label>
+      <label style="font-size:0.85rem; font-weight:700; color:var(--success);">📥 Master Retake CSV Sheet Operations:</label>
       <div class="admin-upload-row">
         <input type="file" id="adminCsvFileInput" accept=".csv,text/csv" style="flex:1; padding:6px 10px; font-size:0.82rem; cursor:pointer;">
         <button class="btn-secondary" id="btnAdminApplyCsv" style="color:var(--success); border-color:rgba(16, 185, 129, 0.4); padding:6px 14px; font-weight:600;">
           Import & Sync
         </button>
+        <button class="btn-secondary" id="btnAdminDownloadCsv" style="color:var(--accent); border-color:rgba(56, 189, 248, 0.4); padding:6px 14px; font-weight:600;">
+          💾 Download to Local Disk
+        </button>
       </div>
       <span id="adminCsvFeedback" style="font-size:0.74rem; color:var(--muted); font-family:monospace;">
-        Select Master_Project_Retake_Sheet.csv to instantly load all client flags and revisions.
+        Upload CSV or download complete project sheet directly to disk.
       </span>
     </div>
 
@@ -851,11 +860,11 @@
     <!-- Action Bar -->
     <div class="compact-action-bar" id="compactActionBar">
       <span class="bar-section-label">AUTO-SAVE:</span>
-      <button class="btn-xs" id="btnLinkCsvFile" style="border-color: rgba(245, 158, 11, 0.4); color: var(--warning);" title="Connect to master .CSV retake sheet for direct auto-save">
+      <button class="btn-xs" id="btnLinkCsvFile" style="border-color: rgba(245, 158, 11, 0.4); color: var(--warning);" title="Direct root auto-save to Master_Project_Retake_Sheet.csv alongside index.html">
         📋 CSV Sync
       </button>
 
-      <span id="diskSaveStatus" title="Status of local disk sync"></span>
+      <span id="diskSaveStatus" title="Status of root folder sync"></span>
 
       <span class="bar-divider"></span>
 
@@ -952,6 +961,10 @@
     return localStorage.getItem(getScopedKey('qc_client_password')) || '';
   }
 
+  function isAdminAuthenticated() {
+    return localStorage.getItem(getScopedKey('qc_admin_remembered')) === 'true';
+  }
+
   const authOverlay = document.getElementById('authOverlay');
   const mainContainer = document.getElementById('mainContainer');
   const passInput = document.getElementById('passInput');
@@ -1011,6 +1024,7 @@
 
   const adminCsvFileInput = document.getElementById('adminCsvFileInput');
   const btnAdminApplyCsv = document.getElementById('btnAdminApplyCsv');
+  const btnAdminDownloadCsv = document.getElementById('btnAdminDownloadCsv');
   const adminCsvFeedback = document.getElementById('adminCsvFeedback');
 
   const DEFAULT_TRACKS = [
@@ -1072,8 +1086,7 @@
   }
 
   function openAdminChallenge() {
-    // Check if remember me was already saved
-    if (localStorage.getItem(getScopedKey('qc_admin_remembered')) === 'true') {
+    if (isAdminAuthenticated()) {
       openAdminPanel();
       return;
     }
@@ -1091,6 +1104,7 @@
       }
       adminAuthModal.style.display = 'none';
       openAdminPanel();
+      renderTranscript();
     } else {
       adminAuthError.style.display = 'block';
       adminPassInput.value = '';
@@ -1108,6 +1122,7 @@
   btnForgetAdmin.addEventListener('click', () => {
     localStorage.removeItem(getScopedKey('qc_admin_remembered'));
     alert('Admin authentication remembered status cleared.');
+    renderTranscript();
   });
 
   let titleClicks = 0;
@@ -1127,7 +1142,7 @@
   function openAdminPanel() {
     adminClientPassSetting.value = getClientPassword();
     adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
-    adminCsvFeedback.textContent = "Select Master_Project_Retake_Sheet.csv to instantly load all client flags and revisions.";
+    adminCsvFeedback.textContent = "Upload CSV or download complete project sheet directly to disk.";
     adminCsvFeedback.style.color = "var(--muted)";
     adminModal.style.display = 'flex';
   }
@@ -1217,6 +1232,15 @@
     reader.readAsText(file);
   });
 
+  // Download Master CSV to Local Disk Under Admin Panel
+  btnAdminDownloadCsv.addEventListener('click', () => {
+    persistSessionLocal();
+    const csvContent = buildAllTracksCsvString();
+    downloadBlob(csvContent, 'Master_Project_Retake_Sheet.csv', 'text/csv;charset=utf-8');
+    adminCsvFeedback.style.color = "var(--success)";
+    adminCsvFeedback.textContent = "Downloaded Master_Project_Retake_Sheet.csv to your disk!";
+  });
+
   // ==========================================================
   // 3. CORE QC & WAVEFORM ENGINE
   // ==========================================================
@@ -1277,14 +1301,7 @@
   let scrubStartX = 0;
   let scrubStartTime = 0;
 
-  let diskCsvHandle = null;
   let autoSaveTimeout = null;
-
-  const supportsFSA = ('showSaveFilePicker' in window);
-  if (!supportsFSA) {
-    btnLinkCsvFile.disabled = true;
-    diskSaveStatus.textContent = "Unsupported";
-  }
 
   function getStorageKeyForTrack(trackTitle) {
     const safeTitle = (trackTitle || 'default').replace(/\s+/g, '_');
@@ -1768,7 +1785,7 @@
     transcriptDiv.innerHTML = '';
     currentActiveId = null;
 
-    // Toggle document class for revision mode to turn the left bar green
+    const isAdmin = isAdminAuthenticated();
     document.body.classList.toggle('viewing-revisions', activeFilter === 'revisions');
 
     segments.forEach((seg, idx) => {
@@ -1786,6 +1803,11 @@
       let paceClass = 'pace-norm';
       if (seg.wpm > 185) paceClass = 'pace-fast';
       else if (seg.wpm < 100) paceClass = 'pace-slow';
+
+      // Only display the Revision field under the 'revisions' filter
+      const showRevisionBox = (activeFilter === 'revisions');
+      const readOnlyAttr = isAdmin ? '' : 'readonly';
+      const readOnlyNotice = !isAdmin ? ' (Admin Read-Only: Log in via Admin with Remember Me to edit)' : '';
 
       card.innerHTML = `
         <div class="seg-header" onclick="window.jumpToSegmentCueOnly(${idx})" title="Click header to cue playhead">
@@ -1813,7 +1835,7 @@
           ${hasRev ? `<span style="font-size: 0.74rem; color: var(--success); margin-left: auto;">Revision Ready</span>` : ''}
         </div>
 
-        <div class="comment-drawer ${seg.flagged || hasRev ? 'open' : ''}" id="drawer-${idx}">
+        <div class="comment-drawer ${seg.flagged || (showRevisionBox && hasRev) ? 'open' : ''}" id="drawer-${idx}">
           <div class="row">
             <label style="font-size: 0.76rem; color: var(--muted);">Issue Type:</label>
             <select class="error-type" data-idx="${idx}">
@@ -1839,8 +1861,12 @@
           <label style="font-size: 0.74rem; color: var(--muted); margin-top: 2px;">Reviewer Notes:</label>
           <textarea class="reviewer-note" placeholder="Describe error or notes for retake..." data-idx="${idx}">${seg.note || ''}</textarea>
 
-          <label style="font-size: 0.74rem; font-weight: 700; color: #6ee7b7; margin-top: 4px;">Revision / Retake Solution:</label>
-          <textarea class="revision-box revision-note" placeholder="Enter retake fix / updated wording or version..." data-idx="${idx}">${seg.revision || ''}</textarea>
+          ${showRevisionBox ? `
+            <label style="font-size: 0.74rem; font-weight: 700; color: #6ee7b7; margin-top: 4px;">
+              Revision / Retake Solution${readOnlyNotice}:
+            </label>
+            <textarea class="revision-box revision-note" ${readOnlyAttr} placeholder="${isAdmin ? 'Enter retake fix / updated wording or version...' : 'Read-only: Log in via Admin with Remember Me to edit revisions.'}" data-idx="${idx}">${seg.revision || ''}</textarea>
+          ` : ''}
         </div>
       `;
 
@@ -1861,11 +1887,14 @@
         persistSessionLocal();
       });
 
-      card.querySelector('.revision-note').addEventListener('input', (e) => {
-        seg.revision = e.target.value;
-        persistSessionLocal();
-        updateFilterCounts();
-      });
+      const revInput = card.querySelector('.revision-note');
+      if (revInput && isAdmin) {
+        revInput.addEventListener('input', (e) => {
+          seg.revision = e.target.value;
+          persistSessionLocal();
+          updateFilterCounts();
+        });
+      }
 
       transcriptDiv.appendChild(card);
     });
@@ -2092,7 +2121,7 @@
   }
 
   // ==========================================================
-  // 4. CSV PARSER & SYNC (AUTOMATIC & ADMIN PANEL)
+  // 4. CSV ROOT SYNC & PARSER
   // ==========================================================
   function parseCsvRecords(text) {
     const rows = [];
@@ -2189,62 +2218,39 @@
       const count = ingestRetakeCsvText(csvText);
       if (count > 0) {
         diskSaveStatus.style.color = 'var(--success)';
-        diskSaveStatus.textContent = 'Auto-loaded disk CSV';
+        diskSaveStatus.textContent = 'Auto-loaded root CSV';
       }
     } catch(err) {
       console.warn('Auto CSV load note:', err);
     }
   }
 
-  async function promptAndEnsureCsvDiskHandle() {
-    if (!supportsFSA) return false;
-    if (diskCsvHandle) return true;
+  // Auto-sync specifically to the root directory next to index.html
+  async function flushCsvToRoot() {
+    const csvData = buildAllTracksCsvString();
+    localStorage.setItem(getScopedKey('qc_root_master_csv'), csvData);
 
     try {
-      diskCsvHandle = await window.showSaveFilePicker({
-        suggestedName: `Master_Project_Retake_Sheet.csv`,
-        types: [{ description: 'CSV Retake Sheet', accept: { 'text/csv': ['.csv'] } }]
+      const res = await fetch('Master_Project_Retake_Sheet.csv', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'text/csv' },
+        body: csvData
       });
-      btnLinkCsvFile.classList.add('active-loop');
-      btnLinkCsvFile.textContent = '📋 CSV Synced';
-      updateDiskStatusText();
-      return true;
-    } catch (err) {
-      if (err.name !== 'AbortError') console.error(err);
-      return false;
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      diskSaveStatus.style.color = 'var(--success)';
+      diskSaveStatus.textContent = res.ok ? `Root saved ${timeStr}` : `Root cached ${timeStr}`;
+    } catch(err) {
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      diskSaveStatus.style.color = 'var(--success)';
+      diskSaveStatus.textContent = `Root cached ${timeStr}`;
     }
   }
 
   btnLinkCsvFile.addEventListener('click', async () => {
-    diskCsvHandle = null;
-    const ok = await promptAndEnsureCsvDiskHandle();
-    if (ok) await flushCsvToDisk();
+    btnLinkCsvFile.classList.add('active-loop');
+    btnLinkCsvFile.textContent = '📋 CSV Synced';
+    await flushCsvToRoot();
   });
-
-  function updateDiskStatusText() {
-    if (diskCsvHandle) {
-      diskSaveStatus.style.color = 'var(--success)';
-      diskSaveStatus.textContent = `(${diskCsvHandle.name})`;
-    } else {
-      diskSaveStatus.textContent = '';
-    }
-  }
-
-  async function flushCsvToDisk() {
-    if (!diskCsvHandle) return;
-    try {
-      const writable = await diskCsvHandle.createWritable({ keepExistingData: false });
-      await writable.truncate(0);
-      await writable.write(buildAllTracksCsvString());
-      await writable.close();
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      diskSaveStatus.style.color = 'var(--success)';
-      diskSaveStatus.textContent = `CSV saved ${timeStr}`;
-    } catch (err) {
-      diskSaveStatus.style.color = 'var(--danger)';
-      diskSaveStatus.textContent = "CSV write error";
-    }
-  }
 
   function persistSessionLocal() {
     const key = getStorageKey();
@@ -2261,10 +2267,8 @@
     }));
     localStorage.setItem(key, JSON.stringify(payload));
 
-    if (diskCsvHandle) {
-      clearTimeout(autoSaveTimeout);
-      autoSaveTimeout = setTimeout(flushCsvToDisk, 500);
-    }
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(flushCsvToRoot, 500);
   }
 
   function loadSession() {
