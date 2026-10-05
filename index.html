@@ -276,6 +276,15 @@
       color: var(--accent);
       border-color: var(--accent);
     }
+    .btn-save-instant {
+      background: rgba(16, 185, 129, 0.18);
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #6ee7b7;
+    }
+    .btn-save-instant:hover {
+      background: var(--success);
+      color: #0b1120;
+    }
     .btn-xs.active-loop {
       background: rgba(16, 185, 129, 0.2);
       border-color: var(--success);
@@ -290,16 +299,17 @@
       background: var(--danger);
       color: #fff;
     }
-    #diskSaveStatus {
-      font-size: 0.68rem;
+    #saveTimeDisplay {
+      font-size: 0.72rem;
       font-family: monospace;
-      color: var(--muted);
-      max-width: 280px;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-weight: 700;
+      color: #10b981;
+      padding: 2px 7px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 4px;
       white-space: nowrap;
-      flex-shrink: 0;
-      margin: 0 4px;
+      display: none;
     }
     .playback-controls {
       display: flex;
@@ -813,7 +823,7 @@
 <!-- Admin Login Verification Modal -->
 <div id="adminAuthModal" class="overlay-backdrop" style="display:none;">
   <div class="modal-box" style="text-align: center;">
-    <div style="font-size: 2rem;">🛡️</div>
+    <div style="font-size: 2rem;">🛡️️</div>
     <h3>Admin Verification</h3>
     <p>Enter the master admin password to configure this portal.</p>
     <input type="password" id="adminPassInput" placeholder="Master Password" autofocus>
@@ -832,30 +842,29 @@
 <div id="adminModal" class="overlay-backdrop" style="display:none;">
   <div class="modal-box admin-mode">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Settings & GitHub Auto-Sync</h3>
+      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Settings & Sync Configuration</h3>
       <button class="btn-secondary" id="btnCloseAdmin" style="padding:4px 8px;">✕</button>
     </div>
 
-    <!-- GitHub Sync Configuration -->
+    <!-- Sync Configuration -->
     <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; display:flex; flex-direction:column; gap:8px;">
-      <span style="font-size: 0.8rem; font-weight: 800; color: #6ee7b7; letter-spacing: 0.05em;">🐙 GITHUB CSV AUTO-SYNC CONFIGURATION</span>
+      <span style="font-size: 0.8rem; font-weight: 800; color: #6ee7b7; letter-spacing: 0.05em;">MASTER CSV AUTO-SYNC SETTINGS</span>
       
       <div class="admin-grid-2col">
         <div>
-          <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:3px;">GitHub Repository (owner/repo):</label>
+          <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:3px;">Repository (owner/repo):</label>
           <input type="text" id="adminGhRepo" placeholder="e.g. username/audiobook-qc" style="width: 100%;">
         </div>
         <div>
-          <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:3px;">CSV Target Path in Repo:</label>
-          <input type="text" id="adminGhPath" placeholder="e.g. data/Master_Retake_Sheet.csv" style="width: 100%;">
+          <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:3px;">CSV Path in Repo:</label>
+          <input type="text" id="adminGhPath" placeholder="e.g. Master_Retake_Sheet.csv" style="width: 100%;">
         </div>
       </div>
 
       <div>
-        <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:3px;">Personal Access Token (PAT) with repo/contents write:</label>
+        <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:3px;">Personal Access Token (write/contents scope):</label>
         <input type="password" id="adminGhToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="width: 100%;">
       </div>
-      <span style="font-size:0.7rem; color:var(--muted);">When filled, any changes, flags, or revisions are automatically committed to your GitHub repository in the background.</span>
     </div>
 
     <div style="display:flex; flex-direction:column; gap:6px;">
@@ -915,24 +924,28 @@
       <span class="flag-counter" id="flagCounter">0 Errors Flagged</span>
     </div>
 
-    <!-- Action Bar (Master CSV & Retakes) -->
+    <!-- Action Bar -->
     <div class="compact-action-bar" id="compactActionBar">
+      <button class="btn-xs btn-save-instant" id="btnManualSave" title="Save changes immediately">
+        💾 Save
+      </button>
+      <span id="saveTimeDisplay"></span>
+
+      <span class="bar-divider"></span>
+
       <!-- Admin Only Master CSV Controls -->
-      <span class="bar-section-label" id="masterCsvLabel" style="display:none;">MASTER RETAKE CSV:</span>
+      <span class="bar-section-label" id="masterCsvLabel" style="display:none;">MASTER CSV:</span>
       <button class="btn-xs" id="btnUploadMasterCsv" style="display:none; color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Upload a master retake CSV sheet to import revisions">
         ⬆ Upload Master CSV
       </button>
-      <button class="btn-xs" id="btnDownloadMasterCsv" style="display:none; color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" title="Download the full Master Retake CSV sheet including all revisions">
+      <button class="btn-xs" id="btnDownloadMasterCsv" style="display:none; color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" title="Download the full Master Retake CSV sheet">
         ⬇ Download Master CSV
       </button>
-
       <span class="bar-divider" id="masterCsvDivider" style="display:none;"></span>
 
       <span class="bar-section-label">EXPORTS:</span>
       <button class="btn-xs" id="btnExportTxt" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">Notes (.txt)</button>
       <button class="btn-xs" id="btnExportCsv" title="Export flagged errors from current chapter">Chapter CSV</button>
-
-      <span id="diskSaveStatus" title="Status of storage"></span>
 
       <button class="btn-xs btn-xs-danger" id="btnClearStorage" style="margin-left: auto;" title="Clear local cache for this chapter and reload">
         Reset Chapter
@@ -972,7 +985,7 @@
       </div>
     </div>
 
-    <!-- Player Bar (Cleaned: Auto-scroll & Preserve Pitch defaults applied) -->
+    <!-- Player Bar -->
     <div class="player-row">
       <audio id="audioPlayer" controls></audio>
     </div>
@@ -1031,6 +1044,8 @@
   const btnDownloadMasterCsv = document.getElementById('btnDownloadMasterCsv');
   const masterCsvLabel = document.getElementById('masterCsvLabel');
   const masterCsvDivider = document.getElementById('masterCsvDivider');
+  const btnManualSave = document.getElementById('btnManualSave');
+  const saveTimeDisplay = document.getElementById('saveTimeDisplay');
 
   function checkClientAccess() {
     const requiredPass = getClientPassword();
@@ -1063,7 +1078,6 @@
     if (e.key === 'Enter') verifyClientPasscode();
   });
 
-  // Admin Verification & Remember Me Logic
   const adminAuthModal = document.getElementById('adminAuthModal');
   const adminPassInput = document.getElementById('adminPassInput');
   const adminRememberMe = document.getElementById('adminRememberMe');
@@ -1158,7 +1172,7 @@
     sessionStorage.removeItem(getScopedKey('qc_admin_active'));
     updateAdminStatusUI();
     renderTranscript();
-    alert("Admin logged out. Master CSV upload/download and Add Revision are now hidden.");
+    alert("Admin logged out.");
   });
 
   let titleClicks = 0;
@@ -1182,10 +1196,6 @@
     }
   });
 
-  if (window.location.search.includes('admin')) {
-    setTimeout(openAdminChallenge, 150);
-  }
-
   function openAdminPanel() {
     adminClientPassSetting.value = getClientPassword();
     adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
@@ -1205,7 +1215,6 @@
       localStorage.removeItem(getScopedKey('qc_client_password'));
     }
 
-    // Save GitHub sync settings
     localStorage.setItem(getScopedKey('qc_gh_repo'), adminGhRepo.value.trim());
     localStorage.setItem(getScopedKey('qc_gh_path'), adminGhPath.value.trim());
     localStorage.setItem(getScopedKey('qc_gh_token'), adminGhToken.value.trim());
@@ -1349,14 +1358,13 @@
   const btnClearStorage = document.getElementById('btnClearStorage');
 
   const masterCsvFileInput = document.getElementById('masterCsvFileInput');
-  const diskSaveStatus = document.getElementById('diskSaveStatus');
 
   let currentTrackTitle = "Chapter 1";
   let vttFileName = "Chapter 1.vtt";
   let activeIndex = -1;
   let segments = [];
   let currentActiveId = null;
-  let activeFilter = 'all'; // 'all' | 'flagged' | 'revisions'
+  let activeFilter = 'all';
   let loopingSegmentIndex = null;
 
   let audioCtx = null;
@@ -1382,9 +1390,10 @@
     return getStorageKeyForTrack(currentTrackTitle);
   }
 
-  function initApp() {
+  async function initApp() {
     updateAdminStatusUI();
     renderTrackGrid();
+    await fetchAndSyncMasterCsv();
     if (TRACKS.length > 0) loadTrack(0);
   }
 
@@ -1396,6 +1405,7 @@
       btn.textContent = track.title;
       btn.addEventListener('click', () => {
         if (activeIndex !== idx) {
+          syncDomToMemory();
           persistSessionLocal();
           loadTrack(idx);
         }
@@ -1431,7 +1441,7 @@
       const arrayBuf = await res.arrayBuffer();
       processAudioBuffer(arrayBuf);
     } catch (e) {
-      console.warn("Waveform decode over CORS failed, playback remains operational:", e);
+      console.warn("Waveform decode CORS unavailable:", e);
       channelData = null;
       drawWaveform();
     }
@@ -1463,7 +1473,7 @@
     } else {
       segments = [];
       renderTranscript();
-      statusDiv.textContent = `Playing "${track.title}", but VTT transcript not found locally.`;
+      statusDiv.textContent = `Playing "${track.title}", but VTT not found locally.`;
       transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not locate "${track.vtt}". Verify filename in admin configuration.</p>`;
     }
   }
@@ -1888,14 +1898,10 @@
     currentActiveId = null;
 
     const selectedError = errorFilter.value;
-    const canEditRevision = isAdminSession;
 
     segments.forEach((seg, idx) => {
       const revActive = hasActiveRevision(seg);
       
-      // Filter logic:
-      // Reviewers under "Flagged" only see cues that are flagged AND NOT yet revised.
-      // Admins see all flagged cues under flagged.
       if (activeFilter === 'flagged') {
         if (!seg.flagged) return;
         if (!isAdminSession && revActive) return;
@@ -1914,7 +1920,6 @@
       if (seg.wpm > 185) paceClass = 'pace-fast';
       else if (seg.wpm < 100) paceClass = 'pace-slow';
 
-      // Revision banner markup on the card when revision text is present
       const revisionBannerHtml = revActive ? `
         <div class="revision-card-banner">
           <div class="rev-banner-title">
@@ -1924,7 +1929,6 @@
         </div>
       ` : '';
 
-      // Revision button/pill is ONLY displayed for admins
       const revisionButtonHtml = isAdminSession ? `
         <button class="revision-btn ${revActive ? 'is-revision' : ''}" data-idx="${idx}" title="Open drawer to edit revision text">
           ✎ ${revActive ? 'Has Revision' : 'Add Revision'}
@@ -2160,7 +2164,6 @@
         activeCard.classList.add('active');
         currentActiveId = activeCard.id;
 
-        // Auto-scroll is permanently active
         const targetScroll = activeCard.offsetTop - (transcriptDiv.clientHeight / 2) + (activeCard.clientHeight / 2);
         transcriptDiv.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
       }
@@ -2232,7 +2235,6 @@
     }
   });
 
-  // Filter tabs handling
   document.querySelectorAll('.filter-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
@@ -2246,8 +2248,6 @@
 
   function updateFilterCounts() {
     countAll.textContent = segments.length;
-    
-    // For reviewer, flagged count only represents unrevised flagged cues
     const flagged = segments.filter(s => {
       if (!s.flagged) return false;
       if (!isAdminSession && hasActiveRevision(s)) return false;
@@ -2260,8 +2260,25 @@
     flagCounter.textContent = `${flagged} ${flagged === 1 ? 'Error' : 'Errors'} Flagged`;
   }
 
+  // Flush live active DOM textarea values into javascript segment objects
+  function syncDomToMemory() {
+    segments.forEach((seg, idx) => {
+      const textElem = document.querySelector(`.seg-text-input[data-idx="${idx}"]`);
+      if (textElem) seg.text = textElem.value;
+
+      const noteElem = document.querySelector(`.reviewer-note-input[data-idx="${idx}"]`);
+      if (noteElem) seg.note = noteElem.value;
+
+      const revElem = document.querySelector(`.revision-input-field[data-idx="${idx}"]`);
+      if (revElem) {
+        seg.revisionText = revElem.value;
+        seg.isRevision = Boolean(seg.revisionText.trim());
+      }
+    });
+  }
+
   // ==========================================================
-  // 3. MASTER RETAKE CSV IMPORT, EXPORT & GITHUB AUTO-SYNC
+  // 3. MASTER RETAKE CSV IMPORT, EXPORT & TWO-WAY SYNC
   // ==========================================================
   function formatCsvCell(val) {
     return `"${(val || '').toString().replace(/"/g, '""')}"`;
@@ -2282,6 +2299,7 @@
   }
 
   function buildMasterCsvString() {
+    syncDomToMemory();
     const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note', 'Revision'];
     const allRows = [];
 
@@ -2344,12 +2362,8 @@
     return data;
   }
 
-  function applyMasterRetakeCsv(csvText) {
+  function applyMasterRetakeCsv(csvText, isAuto = false) {
     const records = parseCsvRows(csvText);
-    if (!records.length) {
-      alert("No data found in uploaded CSV file.");
-      return;
-    }
 
     const byFile = {};
     records.forEach(r => {
@@ -2358,7 +2372,13 @@
       byFile[fileKey].push(r);
     });
 
-    let appliedCount = 0;
+    // Reset current segments to baseline before applying so removed revisions are wiped
+    segments.forEach(s => {
+      s.revisionText = '';
+      s.isRevision = false;
+      s.flagged = false;
+      s.note = '';
+    });
 
     const currentRecords = byFile[currentTrackTitle] || [];
     currentRecords.forEach(rec => {
@@ -2376,26 +2396,31 @@
       }
 
       if (targetSeg) {
-        if (revisionText) {
-          targetSeg.revisionText = revisionText;
-          targetSeg.isRevision = true;
-          targetSeg.flagged = true;
-        }
+        targetSeg.revisionText = revisionText;
+        targetSeg.isRevision = Boolean(revisionText.length > 0);
+        targetSeg.flagged = true;
         if (rec['issue type']) targetSeg.errorType = rec['issue type'];
         if (rec['reviewer note']) targetSeg.note = rec['reviewer note'];
-        appliedCount++;
       }
     });
 
+    // Reset other cached tracks as well
     TRACKS.forEach(track => {
       if (track.title === currentTrackTitle) return;
       const key = getStorageKeyForTrack(track.title);
-      const savedRaw = localStorage.getItem(key);
       const fileRecs = byFile[track.title] || [];
-      if (!fileRecs.length || !savedRaw) return;
+      const savedRaw = localStorage.getItem(key);
+      if (!savedRaw) return;
 
       try {
         const trackSegs = JSON.parse(savedRaw);
+        trackSegs.forEach(s => {
+          s.revisionText = '';
+          s.isRevision = false;
+          s.flagged = false;
+          s.note = '';
+        });
+
         fileRecs.forEach(rec => {
           const cueNum = parseInt(rec['cue #'], 10);
           const revisionText = (rec['revision'] || '').trim();
@@ -2404,48 +2429,61 @@
             seg = trackSegs[cueNum - 1];
           }
           if (seg) {
-            if (revisionText) {
-              seg.revisionText = revisionText;
-              seg.isRevision = true;
-              seg.flagged = true;
-            }
+            seg.revisionText = revisionText;
+            seg.isRevision = Boolean(revisionText.length > 0);
+            seg.flagged = true;
             if (rec['issue type']) seg.errorType = rec['issue type'];
             if (rec['reviewer note']) seg.note = rec['reviewer note'];
-            appliedCount++;
           }
         });
         localStorage.setItem(key, JSON.stringify(trackSegs));
       } catch(e) {}
     });
 
-    persistSessionLocal();
+    persistSessionLocal(false);
     renderTranscript();
     updateLiveSubtitleStrip();
     drawWaveform();
-    alert(`Successfully synced Master Retake CSV! ${appliedCount} cue records loaded/updated.`);
+
+    if (!isAuto) {
+      alert("Master CSV synced successfully!");
+    }
   }
 
   // ==========================================================
-  // GITHUB AUTO-SAVE REST API ENGINE
+  // REMOTE PERSISTENCE ENGINE & TIME DISPLAY
   // ==========================================================
-  let ghSaveTimeout = null;
-  let isGhSaving = false;
+  let isSavingRemote = false;
 
-  async function syncCsvToGitHub(csvContent) {
+  function updateSaveTimeBadge() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour12: false });
+    saveTimeDisplay.textContent = `Saved: ${timeStr}`;
+    saveTimeDisplay.style.display = 'inline-block';
+  }
+
+  async function executeRemoteSave() {
+    syncDomToMemory();
     const repo = localStorage.getItem(getScopedKey('qc_gh_repo'));
     const path = localStorage.getItem(getScopedKey('qc_gh_path')) || 'Master_Retake_Sheet.csv';
     const token = localStorage.getItem(getScopedKey('qc_gh_token'));
 
-    if (!repo || !token || isGhSaving) return;
+    // Always persist local storage
+    persistSessionLocal(false);
 
-    isGhSaving = true;
-    diskSaveStatus.textContent = "Syncing to GitHub...";
+    if (!repo || !token || isSavingRemote) {
+      updateSaveTimeBadge();
+      return;
+    }
+
+    isSavingRemote = true;
+    btnManualSave.disabled = true;
 
     try {
       const cleanPath = path.replace(/^\//, '');
       const apiUrl = `https://api.github.com/repos/${repo}/contents/${cleanPath}`;
+      const csvContent = buildMasterCsvString();
 
-      // 1. Get current SHA if file exists
       let fileSha = null;
       try {
         const getRes = await fetch(apiUrl, {
@@ -2460,12 +2498,9 @@
         }
       } catch(err) {}
 
-      // 2. Base64 UTF-8 encode
       const base64Content = btoa(unescape(encodeURIComponent(csvContent)));
-
-      // 3. Put / Commit file
       const putBody = {
-        message: `Auto-save audio retakes [${currentTrackTitle}]`,
+        message: `Update Master Retake Sheet [${currentTrackTitle}]`,
         content: base64Content
       };
       if (fileSha) putBody.sha = fileSha;
@@ -2481,29 +2516,49 @@
       });
 
       if (putRes.ok) {
-        diskSaveStatus.textContent = "Saved to GitHub ✔";
-      } else {
-        const errJson = await putRes.json();
-        diskSaveStatus.textContent = `GitHub error: ${errJson.message || 'commit failed'}`;
+        updateSaveTimeBadge();
       }
-    } catch(e) {
-      console.error("GitHub Auto-Save failed:", e);
-      diskSaveStatus.textContent = "GitHub sync error";
+    } catch (e) {
+      console.error(e);
     } finally {
-      isGhSaving = false;
-      setTimeout(() => { 
-        if (diskSaveStatus.textContent.includes('GitHub')) diskSaveStatus.textContent = ""; 
-      }, 4000);
+      isSavingRemote = false;
+      btnManualSave.disabled = false;
     }
   }
 
-  function queueGitHubAutoSave() {
-    clearTimeout(ghSaveTimeout);
-    ghSaveTimeout = setTimeout(() => {
-      const csv = buildMasterCsvString();
-      syncCsvToGitHub(csv);
-    }, 2500); // 2.5s debounce to batch quick typing changes
+  async function fetchAndSyncMasterCsv() {
+    const repo = localStorage.getItem(getScopedKey('qc_gh_repo'));
+    const path = localStorage.getItem(getScopedKey('qc_gh_path')) || 'Master_Retake_Sheet.csv';
+    const token = localStorage.getItem(getScopedKey('qc_gh_token'));
+
+    if (!repo || !token) return;
+
+    try {
+      const cleanPath = path.replace(/^\//, '');
+      const apiUrl = `https://api.github.com/repos/${repo}/contents/${cleanPath}`;
+
+      const res = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const decodedCsv = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
+        if (decodedCsv.trim().length > 0) {
+          applyMasterRetakeCsv(decodedCsv, true);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch remote master sheet:", e);
+    }
   }
+
+  btnManualSave.addEventListener('click', () => {
+    executeRemoteSave();
+  });
 
   btnUploadMasterCsv.addEventListener('click', () => {
     masterCsvFileInput.value = '';
@@ -2516,17 +2571,18 @@
     const reader = new FileReader();
     reader.onload = (evt) => {
       applyMasterRetakeCsv(evt.target.result);
+      executeRemoteSave();
     };
     reader.readAsText(file);
   });
 
   btnDownloadMasterCsv.addEventListener('click', () => {
-    persistSessionLocal();
+    syncDomToMemory();
     const csvContent = buildMasterCsvString();
     downloadBlob(csvContent, `Master_Project_Retake_Sheet.csv`, 'text/csv;charset=utf-8');
   });
 
-  function persistSessionLocal() {
+  function persistSessionLocal(triggerRemote = false) {
     const key = getStorageKey();
     if (!key || !segments.length) return;
     const payload = segments.map(s => ({
@@ -2541,13 +2597,6 @@
       note: s.note || ''
     }));
     localStorage.setItem(key, JSON.stringify(payload));
-    diskSaveStatus.textContent = "Saved locally";
-    setTimeout(() => { 
-      if (diskSaveStatus.textContent === "Saved locally") diskSaveStatus.textContent = ""; 
-    }, 2000);
-
-    // Trigger debounced GitHub auto-sync
-    queueGitHubAutoSave();
   }
 
   function loadSession() {
@@ -2595,6 +2644,7 @@
   }
 
   document.getElementById('btnExportTxt').addEventListener('click', () => {
+    syncDomToMemory();
     const flagged = segments.filter(s => s.flagged || hasActiveRevision(s));
     if (!flagged.length) return alert('No issues or revisions have been marked for this track.');
 
@@ -2610,8 +2660,10 @@
     downloadBlob(txt, `${currentTrackTitle.replace(/\s+/g, '_')}_review_notes.txt`, 'text/plain;charset=utf-8');
   });
 
+  // Export Chapter CSV accurately reflecting live screen data
   document.getElementById('btnExportCsv').addEventListener('click', () => {
-    persistSessionLocal();
+    syncDomToMemory();
+    persistSessionLocal(false);
     const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note', 'Revision'];
     const rows = generateCsvFromSegments(segments, currentTrackTitle);
     if (!rows.length) return alert('No errors or revisions currently marked for this chapter.');
