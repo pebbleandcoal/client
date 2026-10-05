@@ -758,7 +758,7 @@
       gap: 14px;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
-    .modal-box.admin-mode { max-width: 740px; max-height: 90vh; overflow-y: auto; }
+    .modal-box.admin-mode { max-width: 720px; }
     .modal-box h3 { margin: 0; font-size: 1.2rem; color: #fff; }
     .modal-box p { margin: 0; font-size: 0.85rem; color: var(--muted); }
     .modal-box input[type="password"], .modal-box input[type="text"], .modal-box textarea {
@@ -776,7 +776,7 @@
       font-size: 0.82rem;
       line-height: 1.5;
       resize: vertical;
-      min-height: 120px;
+      min-height: 140px;
       white-space: pre;
     }
     .modal-box input:focus, .modal-box textarea:focus { border-color: var(--accent); }
@@ -855,28 +855,13 @@
 <div id="adminModal" class="overlay-backdrop" style="display:none;">
   <div class="modal-box admin-mode">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Settings & Integrations</h3>
+      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Settings & Sync Configuration</h3>
       <button class="btn-secondary" id="btnCloseAdmin" style="padding:4px 8px;">✕</button>
     </div>
 
-    <!-- Dropbox Shared Folder Auto-Scanner -->
+    <!-- Sync Configuration -->
     <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; display:flex; flex-direction:column; gap:8px;">
-      <span style="font-size: 0.8rem; font-weight: 800; color: var(--accent); letter-spacing: 0.05em;">📦 SCAN DROPBOX SHARED FOLDER</span>
-      
-      <label style="font-size:0.75rem; color:var(--muted); display:block;">Dropbox Access Token (from App Console with files.metadata.read and sharing.read):</label>
-      <input type="password" id="adminDropboxToken" placeholder="sl.u.xxxxxxxxxxxxxxxxxxxx" style="width: 100%;">
-
-      <label style="font-size:0.75rem; color:var(--muted); display:block;">Dropbox Shared Folder URL:</label>
-      <div style="display:flex; gap:8px;">
-        <input type="text" id="adminDropboxFolderUrl" placeholder="https://www.dropbox.com/scl/fo/... or https://www.dropbox.com/sh/..." style="flex:1;">
-        <button class="btn-xs btn-save-instant" id="btnScanDropboxFolder" style="padding:0 12px;">🔍 Scan & Import Folder</button>
-      </div>
-      <div id="dropboxScanStatus" style="font-size:0.72rem; font-family:monospace; color:var(--muted);"></div>
-    </div>
-
-    <!-- GitHub CSV Sync Configuration -->
-    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; display:flex; flex-direction:column; gap:8px;">
-      <span style="font-size: 0.8rem; font-weight: 800; color: #6ee7b7; letter-spacing: 0.05em;">🐙 MASTER CSV AUTO-SYNC SETTINGS</span>
+      <span style="font-size: 0.8rem; font-weight: 800; color: #6ee7b7; letter-spacing: 0.05em;">MASTER CSV AUTO-SYNC SETTINGS</span>
       
       <div class="admin-grid-2col">
         <div>
@@ -901,8 +886,8 @@
     </div>
 
     <div style="display:flex; flex-direction:column; gap:6px;">
-      <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Dropbox Tracks & Transcripts (Manual / Scanned list):</label>
-      <textarea id="adminTrackInput" spellcheck="false" placeholder="Paste direct links or populate automatically using the folder scanner above..."></textarea>
+      <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Dropbox Tracks & Transcripts:</label>
+      <textarea id="adminTrackInput" spellcheck="false" placeholder="Paste Dropbox links directly (one per line)..."></textarea>
     </div>
 
     <div style="display:flex; gap:10px; justify-content: space-between; align-items:center;">
@@ -962,6 +947,7 @@
       <span class="bar-divider"></span>
 
       <!-- Master CSV Controls -->
+      <span class="bar-section-label">MASTER CSV:</span>
       <button class="btn-xs" id="btnUploadMasterCsv" style="display:none; color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Upload a master retake CSV sheet to import revisions">
         ⬆ Upload Master CSV
       </button>
@@ -1124,11 +1110,6 @@
   const adminGhPath = document.getElementById('adminGhPath');
   const adminGhToken = document.getElementById('adminGhToken');
 
-  const adminDropboxToken = document.getElementById('adminDropboxToken');
-  const adminDropboxFolderUrl = document.getElementById('adminDropboxFolderUrl');
-  const btnScanDropboxFolder = document.getElementById('btnScanDropboxFolder');
-  const dropboxScanStatus = document.getElementById('dropboxScanStatus');
-
   function isAdminRemembered() {
     return localStorage.getItem(getScopedKey('qc_admin_remembered')) === 'true';
   }
@@ -1222,14 +1203,10 @@
 
   function openAdminPanel() {
     adminClientPassSetting.value = getClientPassword();
-    adminTrackInput.value = TRACKS.map(t => `${t.title} | ${t.audio} | ${t.vtt}${t.folderUrl ? ' | ' + t.folderUrl : ''}${t.filePath ? ' | ' + t.filePath : ''}`).join('\n');
+    adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
     adminGhRepo.value = localStorage.getItem(getScopedKey('qc_gh_repo')) || '';
     adminGhPath.value = localStorage.getItem(getScopedKey('qc_gh_path')) || 'Master_Retake_Sheet.csv';
     adminGhToken.value = localStorage.getItem(getScopedKey('qc_gh_token')) || '';
-
-    adminDropboxToken.value = localStorage.getItem(getScopedKey('qc_dbx_token')) || '';
-    adminDropboxFolderUrl.value = localStorage.getItem(getScopedKey('qc_dbx_folder_url')) || '';
-    dropboxScanStatus.textContent = '';
     adminModal.style.display = 'flex';
   }
 
@@ -1247,9 +1224,6 @@
     localStorage.setItem(getScopedKey('qc_gh_path'), adminGhPath.value.trim());
     localStorage.setItem(getScopedKey('qc_gh_token'), adminGhToken.value.trim());
 
-    localStorage.setItem(getScopedKey('qc_dbx_token'), adminDropboxToken.value.trim());
-    localStorage.setItem(getScopedKey('qc_dbx_folder_url'), adminDropboxFolderUrl.value.trim());
-
     const rawLines = adminTrackInput.value.trim().split('\n').map(l => l.trim()).filter(Boolean);
     const newTracks = [];
 
@@ -1259,9 +1233,7 @@
         const title = parts[0] || `Track ${index + 1}`;
         const audio = parts[1];
         const vtt = parts[2] || `${title}.vtt`;
-        const folderUrl = parts[3] || '';
-        const filePath = parts[4] || '';
-        newTracks.push({ title, audio, vtt, folderUrl, filePath });
+        newTracks.push({ title, audio, vtt });
       } else {
         const audio = line;
         const filename = extractFilenameFromUrl(audio);
@@ -1281,148 +1253,6 @@
     alert(`Settings saved successfully!`);
     renderTrackGrid();
     loadTrack(0);
-  });
-
-  // ==========================================================
-  // DROPBOX STREAM RESOLVER & API SCANNER
-  // ==========================================================
-  function getDirectAudioUrl(url) {
-    if (!url) return '';
-    let clean = url.trim();
-    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
-      clean = 'https://' + clean;
-    }
-    try {
-      const parsed = new URL(clean);
-      if (parsed.hostname.includes('dropbox.com')) {
-        parsed.hostname = 'dl.dropboxusercontent.com';
-        parsed.searchParams.delete('dl');
-        parsed.searchParams.set('raw', '1');
-        return parsed.toString();
-      }
-    } catch (e) {
-      clean = clean.replace('www.dropbox.com', 'dl.dropboxusercontent.com')
-                   .replace('//dropbox.com', '//dl.dropboxusercontent.com');
-      clean = clean.replace(/([?&])dl=[01]/, '$1raw=1');
-      if (!clean.includes('raw=1')) clean += (clean.includes('?') ? '&' : '?') + 'raw=1';
-      return clean;
-    }
-    return clean;
-  }
-
-  async function getDirectFileLinkFromSharedFolder(folderUrl, filePath, token) {
-    try {
-      const res = await fetch("https://api.dropboxapi.com/2/sharing/get_shared_link_metadata", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          url: folderUrl,
-          path: filePath
-        })
-      });
-      if (res.ok) {
-        const meta = await res.json();
-        if (meta.url) {
-          let direct = meta.url.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
-          direct = direct.replace(/[?&]dl=[01]/g, '');
-          direct += (direct.includes('?') ? '&' : '?') + 'raw=1';
-          return direct;
-        }
-      }
-    } catch(e) {}
-    return null;
-  }
-
-  btnScanDropboxFolder.addEventListener('click', async () => {
-    const token = adminDropboxToken.value.trim();
-    const folderUrl = adminDropboxFolderUrl.value.trim();
-
-    if (!token) {
-      alert("Please enter your Dropbox Access Token (with files.metadata.read and sharing.read permissions).");
-      return;
-    }
-    if (!folderUrl) {
-      alert("Please enter a Dropbox shared folder link.");
-      return;
-    }
-
-    dropboxScanStatus.style.color = "var(--accent)";
-    dropboxScanStatus.textContent = "Scanning folder and generating direct file streaming links...";
-    btnScanDropboxFolder.disabled = true;
-
-    try {
-      const response = await fetch("https://api.dropboxapi.com/2/files/list_folder", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          path: "",
-          shared_link: { url: folderUrl }
-        })
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error_summary || "Could not list Dropbox folder");
-      }
-
-      const data = await response.json();
-      const entries = data.entries || [];
-
-      const audioRegex = /\.(mp3|wav|m4a|aac|flac|ogg)$/i;
-      const audioFiles = entries.filter(e => e['.tag'] === 'file' && audioRegex.test(e.name));
-      const vttFiles = entries.filter(e => e['.tag'] === 'file' && /\.vtt$/i.test(e.name));
-
-      if (audioFiles.length === 0) {
-        dropboxScanStatus.style.color = "var(--danger)";
-        dropboxScanStatus.textContent = "No audio files (.mp3, .wav, .m4a) found in this folder.";
-        btnScanDropboxFolder.disabled = false;
-        return;
-      }
-
-      audioFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
-
-      const parsedTracks = [];
-      for (let i = 0; i < audioFiles.length; i++) {
-        const file = audioFiles[i];
-        dropboxScanStatus.textContent = `Resolving streaming link for ${file.name} (${i + 1}/${audioFiles.length})...`;
-
-        const baseName = file.name.replace(audioRegex, '');
-        const title = baseName.replace(/[-_]/g, ' ');
-
-        const matchingVtt = vttFiles.find(v => v.name.replace(/\.vtt$/i, '').toLowerCase() === baseName.toLowerCase());
-        const vttName = matchingVtt ? matchingVtt.name : `${baseName}.vtt`;
-
-        let directAudioUrl = await getDirectFileLinkFromSharedFolder(folderUrl, `/${file.name}`, token);
-
-        if (!directAudioUrl) {
-          directAudioUrl = folderUrl;
-        }
-
-        parsedTracks.push({
-          title,
-          audio: directAudioUrl,
-          vtt: vttName,
-          folderUrl: folderUrl,
-          filePath: `/${file.name}`
-        });
-      }
-
-      adminTrackInput.value = parsedTracks.map(t => `${t.title} | ${t.audio} | ${t.vtt} | ${t.folderUrl} | ${t.filePath}`).join('\n');
-      dropboxScanStatus.style.color = "var(--success)";
-      dropboxScanStatus.textContent = `Successfully resolved ${parsedTracks.length} tracks with direct streaming URLs! Click 'Save & Apply' below.`;
-    } catch (err) {
-      console.error(err);
-      dropboxScanStatus.style.color = "var(--danger)";
-      dropboxScanStatus.textContent = `Error: ${err.message}`;
-    } finally {
-      btnScanDropboxFolder.disabled = false;
-    }
   });
 
   btnResetDefault.addEventListener('click', () => {
@@ -1457,6 +1287,30 @@
       try { return JSON.parse(saved); } catch(e) {}
     }
     return DEFAULT_TRACKS;
+  }
+
+  function getDirectAudioUrl(url) {
+    if (!url) return '';
+    let clean = url.trim();
+    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+      clean = 'https://' + clean;
+    }
+    try {
+      const parsed = new URL(clean);
+      if (parsed.hostname.includes('dropbox.com')) {
+        parsed.hostname = 'dl.dropboxusercontent.com';
+        parsed.searchParams.delete('dl');
+        parsed.searchParams.set('raw', '1');
+        return parsed.toString();
+      }
+    } catch (e) {
+      clean = clean.replace('www.dropbox.com', 'dl.dropboxusercontent.com')
+                   .replace('//dropbox.com', '//dl.dropboxusercontent.com');
+      clean = clean.replace(/([?&])dl=[01]/, '$1raw=1');
+      if (!clean.includes('raw=1')) clean += (clean.includes('?') ? '&' : '?') + 'raw=1';
+      return clean;
+    }
+    return clean;
   }
 
   function extractFilenameFromUrl(url) {
@@ -1531,7 +1385,6 @@
   let isScrubbingWaveform = false;
   let scrubStartX = 0;
   let scrubStartTime = 0;
-  let activeBlobUrl = null;
 
   function getStorageKeyForTrack(trackTitle) {
     const safeTitle = (trackTitle || 'default').replace(/\s+/g, '_');
@@ -1576,11 +1429,6 @@
     segments = [];
     currentActiveId = null;
 
-    if (activeBlobUrl) {
-      URL.revokeObjectURL(activeBlobUrl);
-      activeBlobUrl = null;
-    }
-
     activeIndex = idx;
     const track = TRACKS[idx];
     currentTrackTitle = track.title;
@@ -1589,58 +1437,14 @@
     document.querySelectorAll('.track-pill').forEach((b, i) => b.classList.toggle('active', i === idx));
     statusDiv.textContent = `Loading track "${track.title}"...`;
 
-    const token = localStorage.getItem(getScopedKey('qc_dbx_token'));
-    let playableUrl = '';
-    let arrayBuf = null;
-
-    // 1. If direct stream URL is present, use it directly
-    if (track.audio && track.audio.includes('dl.dropboxusercontent.com')) {
-      playableUrl = getDirectAudioUrl(track.audio);
-    } 
-    // 2. Otherwise fetch binary via Dropbox API using shared folder reference
-    else if (track.folderUrl && track.filePath && token) {
-      try {
-        statusDiv.textContent = `Fetching "${track.title}" via Dropbox API...`;
-        
-        const argString = JSON.stringify({
-          url: track.folderUrl,
-          path: track.filePath
-        }).replace(/[\u007f-\uffff]/g, (c) => "\\u" + ("0000" + c.charCodeAt(0).toString(16)).slice(-4));
-
-        const res = await fetch("https://content.dropboxapi.com/2/sharing/get_shared_link_file", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Dropbox-API-Arg": argString
-          }
-        });
-
-        if (res.ok) {
-          const blob = await res.blob();
-          arrayBuf = await blob.arrayBuffer();
-          activeBlobUrl = URL.createObjectURL(blob);
-          playableUrl = activeBlobUrl;
-        }
-      } catch (e) {
-        console.warn("Dropbox API download fallback failed:", e);
-      }
-    }
-
-    if (!playableUrl) {
-      playableUrl = getDirectAudioUrl(track.audio);
-    }
-
-    audioPlayer.src = playableUrl;
+    const directUrl = getDirectAudioUrl(track.audio);
+    audioPlayer.src = directUrl;
 
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (!arrayBuf && playableUrl && !playableUrl.startsWith('blob:')) {
-        const res = await fetch(playableUrl);
-        arrayBuf = await res.arrayBuffer();
-      }
-      if (arrayBuf) {
-        processAudioBuffer(arrayBuf);
-      }
+      const res = await fetch(directUrl);
+      const arrayBuf = await res.arrayBuffer();
+      processAudioBuffer(arrayBuf);
     } catch (e) {
       console.warn("Waveform decode CORS unavailable:", e);
       channelData = null;
@@ -1810,7 +1614,7 @@
       ctx.fillStyle = '#334155';
       ctx.font = '12px system-ui';
       ctx.textAlign = 'center';
-      ctx.fillText('Waveform preview loading...', width / 2, height / 2);
+      ctx.fillText('Waveform preview unavailable over CORS.', width / 2, height / 2);
       ctx.textAlign = 'left';
       return;
     }
@@ -1877,6 +1681,7 @@
       for (let j = 0; j < step; j++) {
         const idx = chunkStart + j;
         if (idx >= channelData.length) break;
+        const val = chunkStart + j;
         const sVal = channelData[idx];
         if (sVal < min) min = sVal;
         if (sVal > max) max = sVal;
@@ -2136,6 +1941,7 @@
         </button>
       ` : '';
 
+      // Reviewer gets non-editable text; Admin gets editable textarea for script phrase
       const scriptBodyHtml = isAdminSession ? `
         <textarea class="seg-text-input" data-idx="${idx}">${seg.text}</textarea>
       ` : `
