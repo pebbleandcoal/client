@@ -12,7 +12,8 @@
       --accent: #38bdf8;
       --danger: #f43f5e;
       --warning: #f59e0b;
-      --revision: #a855f7;
+      --revision: #10b981;
+      --revision-glow: rgba(16, 185, 129, 0.25);
       --success: #10b981;
       --text: #f8fafc;
       --muted: #94a3b8;
@@ -45,6 +46,28 @@
       font-size: 1.3rem;
       cursor: pointer; 
       user-select: none;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .admin-indicator {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(15, 23, 42, 0.6);
+      cursor: pointer;
+    }
+    .admin-indicator.logged-in {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
     }
     #btnAdminTrigger {
       background: transparent;
@@ -442,7 +465,7 @@
     }
     .filter-tab.revision-tab.active {
       color: var(--revision);
-      border-color: rgba(168, 85, 247, 0.4);
+      border-color: rgba(16, 185, 129, 0.4);
     }
     #status {
       font-size: 0.72rem;
@@ -525,11 +548,11 @@
     }
     .segment.is-revision {
       border-left: 4px solid var(--revision);
-      background: rgba(168, 85, 247, 0.08);
+      background: rgba(16, 185, 129, 0.08);
     }
     .segment.flagged.is-revision {
       border-left: 4px solid var(--danger);
-      box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.4);
+      box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.4);
     }
     .seg-header {
       display: flex;
@@ -571,14 +594,42 @@
     .pace-norm { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
     .pace-slow { background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4); }
     .badge-revision {
-      background: rgba(168, 85, 247, 0.2);
-      border: 1px solid rgba(168, 85, 247, 0.45);
-      color: #d8b4fe;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #6ee7b7;
       padding: 1px 6px;
       border-radius: 3px;
       font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .revision-card-banner {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .revision-card-banner .rev-banner-title {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #6ee7b7;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .revision-card-banner .rev-banner-text {
+      font-size: 0.82rem;
+      color: #ecfdf5;
+      font-weight: 500;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
     .seg-text-input {
       background: rgba(9, 13, 22, 0.5);
@@ -623,8 +674,8 @@
     }
     .revision-btn {
       background: transparent;
-      border: 1px solid rgba(168, 85, 247, 0.4);
-      color: #d8b4fe;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
       padding: 3px 7px;
       font-size: 0.72rem;
       display: inline-flex;
@@ -635,7 +686,8 @@
     }
     .revision-btn.is-revision {
       background: var(--revision);
-      color: #fff;
+      color: #0b1120;
+      font-weight: 700;
       border-color: var(--revision);
     }
     .comment-drawer {
@@ -658,6 +710,20 @@
     .comment-drawer textarea {
       resize: vertical;
       min-height: 38px;
+    }
+    .revision-input-field {
+      border-color: rgba(16, 185, 129, 0.4) !important;
+      background: #071510 !important;
+      color: #a7f3d0 !important;
+    }
+    .revision-input-field:focus {
+      border-color: var(--success) !important;
+    }
+    .revision-input-field:read-only {
+      background: #081118 !important;
+      border-color: #243547 !important;
+      color: #94a3b8 !important;
+      cursor: not-allowed;
     }
     .overlay-backdrop {
       position: fixed;
@@ -801,7 +867,10 @@
 <div class="container" id="mainContainer">
   <div class="header-row">
     <h2 id="appTitle" title="Double click or click the gear for settings">Audio Review & QC Studio</h2>
-    <button id="btnAdminTrigger" title="Admin Settings">⚙️</button>
+    <div class="header-actions">
+      <span id="adminStatusBadge" class="admin-indicator" title="Admin status / click to log in">Reviewer</span>
+      <button id="btnAdminTrigger" title="Admin Settings">⚙️</button>
+    </div>
   </div>
 
   <div class="panel">
@@ -837,7 +906,7 @@
       <button class="btn-xs" id="btnUploadMasterCsv" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Upload a master retake CSV sheet to import revisions">
         ⬆ Upload Master CSV
       </button>
-      <button class="btn-xs" id="btnDownloadMasterCsv" style="color: #d8b4fe; border-color: rgba(168, 85, 247, 0.4);" title="Download the full Master Retake CSV sheet including all revisions">
+      <button class="btn-xs" id="btnDownloadMasterCsv" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" title="Download the full Master Retake CSV sheet including all revisions">
         ⬇ Download Master CSV
       </button>
 
@@ -881,7 +950,7 @@
         <div class="wave-badge" id="waveModeBadge">Window ±5.0s</div>
       </div>
 
-      <!-- Live Subtitle Strip (Cleaned) -->
+      <!-- Live Subtitle Strip -->
       <div class="live-subtitle-strip" id="liveSubtitleStrip">
         <div class="live-sub-text placeholder" id="liveSubText">Select a chapter to begin</div>
       </div>
@@ -896,7 +965,7 @@
       </div>
     </div>
 
-    <!-- Playback Controls (Cleaned) -->
+    <!-- Playback Controls -->
     <div class="playback-controls">
       <button type="button" class="btn-ctrl" id="btnRewind5" title="Jump back 5s [J]">↺ -5s [J]</button>
       <button type="button" class="btn-ctrl" id="btnForward5" title="Jump forward 5s [L]">+5s ↻ [L]</button>
@@ -925,7 +994,7 @@
 
 <script>
   // ==========================================================
-  // 1. AUTHENTICATION & REMEMBER ME (PASSWORD CHANGED TO "1")
+  // 1. AUTHENTICATION & ADMIN PERMISSIONS
   // ==========================================================
   const MASTER_ADMIN_PASSWORD = "1";
   const PATH_KEY = window.location.pathname.replace(/index\.html$/i, '');
@@ -937,11 +1006,14 @@
     return localStorage.getItem(getScopedKey('qc_client_password')) || '';
   }
 
+  let isAdminSession = false;
+
   const authOverlay = document.getElementById('authOverlay');
   const mainContainer = document.getElementById('mainContainer');
   const passInput = document.getElementById('passInput');
   const btnUnlock = document.getElementById('btnUnlock');
   const authError = document.getElementById('authError');
+  const adminStatusBadge = document.getElementById('adminStatusBadge');
 
   function checkClientAccess() {
     const requiredPass = getClientPassword();
@@ -996,9 +1068,29 @@
     return localStorage.getItem(getScopedKey('qc_admin_remembered')) === 'true';
   }
 
+  function updateAdminStatusUI() {
+    isAdminSession = isAdminRemembered() || sessionStorage.getItem(getScopedKey('qc_admin_active')) === 'true';
+    if (isAdminSession) {
+      adminStatusBadge.textContent = 'Admin Mode';
+      adminStatusBadge.classList.add('logged-in');
+      adminStatusBadge.title = 'Admin is active. Click to open settings.';
+    } else {
+      adminStatusBadge.textContent = 'Reviewer';
+      adminStatusBadge.classList.remove('logged-in');
+      adminStatusBadge.title = 'Click to log in as Admin.';
+    }
+  }
+
+  adminStatusBadge.addEventListener('click', () => {
+    openAdminChallenge();
+  });
+
   function openAdminChallenge() {
     if (isAdminRemembered()) {
+      sessionStorage.setItem(getScopedKey('qc_admin_active'), 'true');
+      updateAdminStatusUI();
       openAdminPanel();
+      renderTranscript();
       return;
     }
     adminAuthError.style.display = 'none';
@@ -1013,8 +1105,11 @@
       if (adminRememberMe.checked) {
         localStorage.setItem(getScopedKey('qc_admin_remembered'), 'true');
       }
+      sessionStorage.setItem(getScopedKey('qc_admin_active'), 'true');
+      updateAdminStatusUI();
       adminAuthModal.style.display = 'none';
       openAdminPanel();
+      renderTranscript();
     } else {
       adminAuthError.style.display = 'block';
       adminPassInput.value = '';
@@ -1031,7 +1126,10 @@
 
   btnForgetAdminAuth.addEventListener('click', () => {
     localStorage.removeItem(getScopedKey('qc_admin_remembered'));
-    alert("Admin login credentials will be requested next time.");
+    sessionStorage.removeItem(getScopedKey('qc_admin_active'));
+    updateAdminStatusUI();
+    renderTranscript();
+    alert("Admin logged out. Revision text is now read-only.");
   });
 
   let titleClicks = 0;
@@ -1250,6 +1348,7 @@
   }
 
   function initApp() {
+    updateAdminStatusUI();
     renderTrackGrid();
     if (TRACKS.length > 0) loadTrack(0);
   }
@@ -1496,9 +1595,10 @@
       const boxLeft = Math.max(0, cueStartX);
       const boxRight = Math.min(width, cueEndX);
       if (boxRight > boxLeft) {
+        const hasRevision = Boolean(activeCue.revisionText && activeCue.revisionText.trim());
         ctx.fillStyle = (loopingSegmentIndex !== null) 
-          ? 'rgba(16, 185, 129, 0.16)' 
-          : (activeCue.isRevision ? 'rgba(168, 85, 247, 0.18)' : 'rgba(56, 189, 248, 0.13)');
+          ? 'rgba(16, 185, 129, 0.22)' 
+          : (hasRevision ? 'rgba(16, 185, 129, 0.18)' : 'rgba(56, 189, 248, 0.13)');
         ctx.fillRect(boxLeft, 0, boxRight - boxLeft, height);
       }
     }
@@ -1703,7 +1803,7 @@
       cps: '0.0',
       flagged: false,
       isRevision: false,
-      revisionNote: '',
+      revisionText: '',
       errorType: 'Mispronunciation',
       note: ''
     };
@@ -1744,20 +1844,26 @@
     audioPlayer.play();
   };
 
+  function hasActiveRevision(seg) {
+    return Boolean(seg.revisionText && seg.revisionText.trim().length > 0);
+  }
+
   function renderTranscript() {
     transcriptDiv.innerHTML = '';
     currentActiveId = null;
 
     const selectedError = errorFilter.value;
+    const canEditRevision = isAdminSession;
 
     segments.forEach((seg, idx) => {
+      const revActive = hasActiveRevision(seg);
       if (activeFilter === 'flagged' && !seg.flagged) return;
-      if (activeFilter === 'revisions' && !seg.isRevision) return;
+      if (activeFilter === 'revisions' && !revActive) return;
       if (selectedError && seg.errorType !== selectedError) return;
 
       const isThisLooping = (loopingSegmentIndex === idx);
       const card = document.createElement('div');
-      card.className = `segment ${seg.flagged ? 'flagged' : ''} ${seg.isRevision ? 'is-revision' : ''} ${isThisLooping ? 'looping-cue' : ''}`;
+      card.className = `segment ${seg.flagged ? 'flagged' : ''} ${revActive ? 'is-revision' : ''} ${isThisLooping ? 'looping-cue' : ''}`;
       card.id = `seg-${idx}`;
       card.dataset.start = seg.start;
       card.dataset.end = seg.end;
@@ -1766,6 +1872,16 @@
       if (seg.wpm > 185) paceClass = 'pace-fast';
       else if (seg.wpm < 100) paceClass = 'pace-slow';
 
+      // Revision banner markup on the card when revision text is present
+      const revisionBannerHtml = revActive ? `
+        <div class="revision-card-banner">
+          <div class="rev-banner-title">
+            <span>✏️ Revision / Retake Direction:</span>
+          </div>
+          <div class="rev-banner-text">${escapeHtml(seg.revisionText)}</div>
+        </div>
+      ` : '';
+
       card.innerHTML = `
         <div class="seg-header" onclick="window.jumpToSegmentCueOnly(${idx})" title="Click header to cue playhead">
           <span class="cue-number">#${idx + 1}</span>
@@ -1773,7 +1889,7 @@
             [${formatTime(seg.start)} - ${formatTime(seg.end)}]
           </span>
           <span class="pace-pill ${paceClass}">${seg.wpm} WPM | ${seg.cps} CPS</span>
-          ${seg.isRevision ? `<span class="badge-revision">Revision</span>` : ''}
+          ${revActive ? `<span class="badge-revision">Revision</span>` : ''}
 
           <button class="btn-ctrl" style="padding: 2px 7px; font-size: 0.72rem; margin-left: auto;" onclick="event.stopPropagation(); window.playSegment(${idx})">▶ Play</button>
           <button class="btn-ctrl ${isThisLooping ? 'active-loop' : ''}" style="padding: 2px 7px; font-size: 0.72rem;" onclick="event.stopPropagation(); window.toggleLoopSegment(${idx})">
@@ -1783,19 +1899,21 @@
 
         <textarea class="seg-text-input" data-idx="${idx}">${seg.text}</textarea>
 
+        ${revisionBannerHtml}
+
         <div class="seg-footer">
           <button class="flag-btn ${seg.flagged ? 'is-flagged' : ''}" data-idx="${idx}">
             ⚑ ${seg.flagged ? 'Flagged' : 'Flag Issue'}
           </button>
-          
-          <button class="revision-btn ${seg.isRevision ? 'is-revision' : ''}" data-idx="${idx}" title="Mark/Unmark as Revision from Retake CSV">
-            ✎ ${seg.isRevision ? 'Revision Marked' : 'Mark Revision'}
+
+          <button class="revision-btn ${revActive ? 'is-revision' : ''}" data-idx="${idx}" title="Open drawer to inspect or edit revision text">
+            ✎ ${revActive ? 'Has Revision' : 'Add Revision'}
           </button>
 
           <span style="font-size: 0.74rem; color: var(--muted); margin-left: 4px;">${seg.flagged ? seg.errorType : ''}</span>
         </div>
 
-        <div class="comment-drawer ${seg.flagged || seg.isRevision ? 'open' : ''}" id="drawer-${idx}">
+        <div class="comment-drawer ${seg.flagged || revActive ? 'open' : ''}" id="drawer-${idx}">
           <div class="row">
             <label style="font-size: 0.76rem; color: var(--muted);">Issue Type:</label>
             <select class="error-type" data-idx="${idx}">
@@ -1809,7 +1927,7 @@
           </div>
           
           <div class="quick-pill-container">
-            <span style="font-size: 0.68rem; color: var(--muted);">Quick Add:</span>
+            <span style="font-size: 0.68rem; color: var(--muted);">Quick Add Note:</span>
             <button class="btn-quick-pill" onclick="window.appendQuickNote(${idx}, 'Breath / Click')">+ Breath/Click</button>
             <button class="btn-quick-pill" onclick="window.appendQuickNote(${idx}, 'Stumbled on word')">+ Stumble</button>
             <button class="btn-quick-pill" onclick="window.appendQuickNote(${idx}, 'Plosive / P-Pop')">+ P-Pop</button>
@@ -1818,7 +1936,18 @@
             <button class="btn-quick-pill" onclick="window.appendQuickNote(${idx}, 'Low energy / Flat')">+ Low Energy</button>
           </div>
 
-          <textarea placeholder="Describe error or retake notes..." data-idx="${idx}">${seg.note}</textarea>
+          <label style="font-size: 0.74rem; font-weight: 600; color: var(--muted); margin-top: 4px;">Reviewer Note:</label>
+          <textarea class="reviewer-note-input" placeholder="Describe error or notes..." data-idx="${idx}">${seg.note || ''}</textarea>
+
+          <label style="font-size: 0.74rem; font-weight: 700; color: #6ee7b7; margin-top: 4px; display:flex; justify-content:space-between; align-items:center;">
+            <span>Revision / Retake Direction:</span>
+            ${!canEditRevision ? '<span style="font-size:0.68rem; font-weight:normal; color:var(--muted);">(Admin login required to edit)</span>' : ''}
+          </label>
+          <textarea 
+            class="revision-input-field" 
+            data-idx="${idx}" 
+            placeholder="${canEditRevision ? 'Enter revision text / retake correction instructions...' : 'Revision text is view-only for reviewers...'}"
+            ${!canEditRevision ? 'readonly' : ''}>${seg.revisionText || ''}</textarea>
         </div>
       `;
 
@@ -1838,12 +1967,14 @@
 
       card.querySelector('.revision-btn').addEventListener('click', (e) => {
         e.stopPropagation();
-        seg.isRevision = !seg.isRevision;
-        if (seg.isRevision && !seg.flagged) {
-          seg.flagged = true; // revisions are automatically flagged
+        const drawer = document.getElementById(`drawer-${idx}`);
+        if (drawer) {
+          drawer.classList.toggle('open');
+          const revBox = drawer.querySelector('.revision-input-field');
+          if (revBox && drawer.classList.contains('open') && canEditRevision) {
+            revBox.focus();
+          }
         }
-        persistSessionLocal();
-        renderTranscript();
       });
 
       card.querySelector('.error-type').addEventListener('change', (e) => {
@@ -1851,10 +1982,29 @@
         persistSessionLocal();
       });
 
-      card.querySelector('.comment-drawer textarea').addEventListener('input', (e) => {
+      card.querySelector('.reviewer-note-input').addEventListener('input', (e) => {
         seg.note = e.target.value;
         persistSessionLocal();
       });
+
+      const revField = card.querySelector('.revision-input-field');
+      if (revField && canEditRevision) {
+        revField.addEventListener('input', (e) => {
+          seg.revisionText = e.target.value;
+          seg.isRevision = Boolean(seg.revisionText.trim());
+          if (seg.isRevision && !seg.flagged) {
+            seg.flagged = true; // Auto-flag cue on revision
+          }
+          persistSessionLocal();
+          updateFilterCounts();
+          drawWaveform();
+        });
+
+        // Re-render card when leaving revision box to ensure green banner updates cleanly
+        revField.addEventListener('blur', () => {
+          renderTranscript();
+        });
+      }
 
       transcriptDiv.appendChild(card);
     });
@@ -1862,11 +2012,20 @@
     updateFilterCounts();
   }
 
+  function escapeHtml(str) {
+    return (str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   window.appendQuickNote = function(idx, textToAdd) {
     const seg = segments[idx];
     if (!seg) return;
     seg.note = seg.note ? `${seg.note}; ${textToAdd}` : textToAdd;
-    const textarea = document.querySelector(`#drawer-${idx} textarea`);
+    const textarea = document.querySelector(`#drawer-${idx} .reviewer-note-input`);
     if (textarea) textarea.value = seg.note;
     persistSessionLocal();
   };
@@ -2039,36 +2198,37 @@
   function updateFilterCounts() {
     countAll.textContent = segments.length;
     const flagged = segments.filter(s => s.flagged).length;
-    const revisions = segments.filter(s => s.isRevision).length;
+    const revisions = segments.filter(s => hasActiveRevision(s)).length;
     countFlagged.textContent = flagged;
     countRevisions.textContent = revisions;
     flagCounter.textContent = `${flagged} ${flagged === 1 ? 'Error' : 'Errors'} Flagged`;
   }
 
   // ==========================================================
-  // 3. MASTER RETAKE CSV IMPORT & EXPORT (WITH REVISION COLUMN)
+  // 3. MASTER RETAKE CSV IMPORT & EXPORT
+  // Header: File, Cue #, Time Start, Time End, Issue Type, Script Phrase, Reviewer Note, Revision
   // ==========================================================
   function formatCsvCell(val) {
     return `"${(val || '').toString().replace(/"/g, '""')}"`;
   }
 
   function generateCsvFromSegments(items, fileName) {
-    // Only exports cues that have flags or revisions
-    const activeItems = (items || []).filter(s => s && (s.flagged === true || s.isRevision === true));
+    // Only exports cues that have flags or revision text
+    const activeItems = (items || []).filter(s => s && (s.flagged === true || (s.revisionText && s.revisionText.trim())));
     return activeItems.map((s, i) => [
       formatCsvCell(fileName),
       s.id !== undefined ? s.id + 1 : i + 1,
       formatCsvCell(formatTime(s.start)),
       formatCsvCell(formatTime(s.end)),
-      formatCsvCell(s.isRevision ? 'Yes' : 'No'),
       formatCsvCell(s.errorType || 'Mispronunciation'),
       formatCsvCell(s.text),
-      formatCsvCell(s.note || '')
+      formatCsvCell(s.note || ''),
+      formatCsvCell(s.revisionText || '')
     ].join(','));
   }
 
   function buildMasterCsvString() {
-    const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Revision', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
+    const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note', 'Revision'];
     const allRows = [];
 
     TRACKS.forEach(track => {
@@ -2151,14 +2311,12 @@
     const currentRecords = byFile[currentTrackTitle] || [];
     currentRecords.forEach(rec => {
       const cueNum = parseInt(rec['cue #'], 10);
-      const isRev = (rec['revision'] || '').toLowerCase();
-      const hasRevision = isRev === 'yes' || isRev === 'true' || isRev === '1' || isRev.includes('rev');
+      const revisionText = (rec['revision'] || '').trim();
 
       let targetSeg = null;
       if (!isNaN(cueNum) && segments[cueNum - 1]) {
         targetSeg = segments[cueNum - 1];
       } else {
-        // match by phrase
         const phrase = (rec['script phrase'] || '').toLowerCase();
         if (phrase) {
           targetSeg = segments.find(s => s.text.toLowerCase().includes(phrase) || phrase.includes(s.text.toLowerCase()));
@@ -2166,8 +2324,11 @@
       }
 
       if (targetSeg) {
-        targetSeg.isRevision = hasRevision;
-        if (hasRevision) targetSeg.flagged = true;
+        if (revisionText) {
+          targetSeg.revisionText = revisionText;
+          targetSeg.isRevision = true;
+          targetSeg.flagged = true;
+        }
         if (rec['issue type']) targetSeg.errorType = rec['issue type'];
         if (rec['reviewer note']) targetSeg.note = rec['reviewer note'];
         appliedCount++;
@@ -2186,15 +2347,17 @@
         const trackSegs = JSON.parse(savedRaw);
         fileRecs.forEach(rec => {
           const cueNum = parseInt(rec['cue #'], 10);
-          const isRev = (rec['revision'] || '').toLowerCase();
-          const hasRevision = isRev === 'yes' || isRev === 'true' || isRev === '1' || isRev.includes('rev');
+          const revisionText = (rec['revision'] || '').trim();
           let seg = null;
           if (!isNaN(cueNum) && trackSegs[cueNum - 1]) {
             seg = trackSegs[cueNum - 1];
           }
           if (seg) {
-            seg.isRevision = hasRevision;
-            if (hasRevision) seg.flagged = true;
+            if (revisionText) {
+              seg.revisionText = revisionText;
+              seg.isRevision = true;
+              seg.flagged = true;
+            }
             if (rec['issue type']) seg.errorType = rec['issue type'];
             if (rec['reviewer note']) seg.note = rec['reviewer note'];
             appliedCount++;
@@ -2208,7 +2371,7 @@
     renderTranscript();
     updateLiveSubtitleStrip();
     drawWaveform();
-    alert(`Successfully synced Master Retake CSV! ${appliedCount} cue revision records loaded.`);
+    alert(`Successfully synced Master Retake CSV! ${appliedCount} cue records loaded/updated.`);
   }
 
   btnUploadMasterCsv.addEventListener('click', () => {
@@ -2241,7 +2404,8 @@
       end: s.end,
       text: s.text,
       flagged: s.flagged === true,
-      isRevision: s.isRevision === true,
+      isRevision: Boolean(s.revisionText && s.revisionText.trim()),
+      revisionText: s.revisionText || '',
       errorType: s.errorType || 'Mispronunciation',
       note: s.note || ''
     }));
@@ -2264,7 +2428,8 @@
           if (item.end !== undefined) segments[index].end = item.end;
           segments[index].text = item.text;
           segments[index].flagged = item.flagged === true;
-          segments[index].isRevision = item.isRevision === true;
+          segments[index].revisionText = item.revisionText || '';
+          segments[index].isRevision = Boolean(item.revisionText && item.revisionText.trim());
           segments[index].errorType = item.errorType || 'Mispronunciation';
           segments[index].note = item.note || '';
           recalculateMetrics(segments[index]);
@@ -2294,13 +2459,13 @@
   }
 
   document.getElementById('btnExportTxt').addEventListener('click', () => {
-    const flagged = segments.filter(s => s.flagged || s.isRevision);
+    const flagged = segments.filter(s => s.flagged || hasActiveRevision(s));
     if (!flagged.length) return alert('No issues or revisions have been marked for this track.');
 
     let txt = `AUDIO REVIEW & RETAKE NOTES - ${currentTrackTitle}\nGenerated: ${new Date().toLocaleString()}\n\n`;
     flagged.forEach((item, i) => {
       txt += `[${i + 1}] TIME: ${formatTime(item.start)} - ${formatTime(item.end)}\n`;
-      txt += `REVISION: ${item.isRevision ? 'YES' : 'NO'}\n`;
+      txt += `REVISION: ${hasActiveRevision(item) ? item.revisionText : 'None'}\n`;
       txt += `ISSUE: ${item.errorType}\n`;
       txt += `TEXT: "${item.text}"\n`;
       txt += `NOTE: ${item.note || 'None'}\n\n`;
@@ -2311,7 +2476,7 @@
 
   document.getElementById('btnExportCsv').addEventListener('click', () => {
     persistSessionLocal();
-    const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Revision', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
+    const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note', 'Revision'];
     const rows = generateCsvFromSegments(segments, currentTrackTitle);
     if (!rows.length) return alert('No errors or revisions currently marked for this chapter.');
     const csvContent = [headers.join(','), ...rows].join('\n');
