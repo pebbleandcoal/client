@@ -962,7 +962,6 @@
       <span class="bar-divider"></span>
 
       <!-- Master CSV Controls -->
-      <span class="bar-section-label">MASTER CSV:</span>
       <button class="btn-xs" id="btnUploadMasterCsv" style="display:none; color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Upload a master retake CSV sheet to import revisions">
         ⬆ Upload Master CSV
       </button>
@@ -1311,12 +1310,38 @@
     return clean;
   }
 
+  async function getDirectFileLinkFromSharedFolder(folderUrl, filePath, token) {
+    try {
+      const res = await fetch("https://api.dropboxapi.com/2/sharing/get_shared_link_metadata", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          url: folderUrl,
+          path: filePath
+        })
+      });
+      if (res.ok) {
+        const meta = await res.json();
+        if (meta.url) {
+          let direct = meta.url.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+          direct = direct.replace(/[?&]dl=[01]/g, '');
+          direct += (direct.includes('?') ? '&' : '?') + 'raw=1';
+          return direct;
+        }
+      }
+    } catch(e) {}
+    return null;
+  }
+
   btnScanDropboxFolder.addEventListener('click', async () => {
     const token = adminDropboxToken.value.trim();
     const folderUrl = adminDropboxFolderUrl.value.trim();
 
     if (!token) {
-      alert("Please enter your Dropbox Access Token (from App Console with files.metadata.read and sharing.read permissions).");
+      alert("Please enter your Dropbox Access Token (with files.metadata.read and sharing.read permissions).");
       return;
     }
     if (!folderUrl) {
@@ -1325,7 +1350,7 @@
     }
 
     dropboxScanStatus.style.color = "var(--accent)";
-    dropboxScanStatus.textContent = "Scanning folder and mapping audio tracks...";
+    dropboxScanStatus.textContent = "Scanning folder and generating direct file streaming links...";
     btnScanDropboxFolder.disabled = true;
 
     try {
@@ -1363,25 +1388,34 @@
       audioFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 
       const parsedTracks = [];
-      audioFiles.forEach((file) => {
+      for (let i = 0; i < audioFiles.length; i++) {
+        const file = audioFiles[i];
+        dropboxScanStatus.textContent = `Resolving streaming link for ${file.name} (${i + 1}/${audioFiles.length})...`;
+
         const baseName = file.name.replace(audioRegex, '');
         const title = baseName.replace(/[-_]/g, ' ');
 
         const matchingVtt = vttFiles.find(v => v.name.replace(/\.vtt$/i, '').toLowerCase() === baseName.toLowerCase());
         const vttName = matchingVtt ? matchingVtt.name : `${baseName}.vtt`;
 
+        let directAudioUrl = await getDirectFileLinkFromSharedFolder(folderUrl, `/${file.name}`, token);
+
+        if (!directAudioUrl) {
+          directAudioUrl = folderUrl;
+        }
+
         parsedTracks.push({
           title,
-          audio: file.name,
+          audio: directAudioUrl,
           vtt: vttName,
           folderUrl: folderUrl,
           filePath: `/${file.name}`
         });
-      });
+      }
 
       adminTrackInput.value = parsedTracks.map(t => `${t.title} | ${t.audio} | ${t.vtt} | ${t.folderUrl} | ${t.filePath}`).join('\n');
       dropboxScanStatus.style.color = "var(--success)";
-      dropboxScanStatus.textContent = `Successfully mapped ${parsedTracks.length} tracks from shared folder! Click 'Save & Apply' below.`;
+      dropboxScanStatus.textContent = `Successfully resolved ${parsedTracks.length} tracks with direct streaming URLs! Click 'Save & Apply' below.`;
     } catch (err) {
       console.error(err);
       dropboxScanStatus.style.color = "var(--danger)";
@@ -1559,29 +1593,36 @@
     let playableUrl = '';
     let arrayBuf = null;
 
-    // Direct streaming from Dropbox Shared Folder via official API endpoint
-    if (track.folderUrl && track.filePath && token) {
+    // 1. If direct stream URL is present, use it directly
+    if (track.audio && track.audio.includes('dl.dropboxusercontent.com')) {
+      playableUrl = getDirectAudioUrl(track.audio);
+    } 
+    // 2. Otherwise fetch binary via Dropbox API using shared folder reference
+    else if (track.folderUrl && track.filePath && token) {
       try {
-        statusDiv.textContent = `Streaming "${track.title}" from Dropbox folder...`;
+        statusDiv.textContent = `Fetching "${track.title}" via Dropbox API...`;
+        
+        const argString = JSON.stringify({
+          url: track.folderUrl,
+          path: track.filePath
+        }).replace(/[\u007f-\uffff]/g, (c) => "\\u" + ("0000" + c.charCodeAt(0).toString(16)).slice(-4));
+
         const res = await fetch("https://content.dropboxapi.com/2/sharing/get_shared_link_file", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${token}`,
-            "Dropbox-API-Arg": JSON.stringify({
-              url: track.folderUrl,
-              path: track.filePath
-            })
+            "Dropbox-API-Arg": argString
           }
         });
 
-        if (!res.ok) throw new Error("Could not fetch file content from Dropbox");
-
-        const blob = await res.blob();
-        arrayBuf = await blob.arrayBuffer();
-        activeBlobUrl = URL.createObjectURL(blob);
-        playableUrl = activeBlobUrl;
+        if (res.ok) {
+          const blob = await res.blob();
+          arrayBuf = await blob.arrayBuffer();
+          activeBlobUrl = URL.createObjectURL(blob);
+          playableUrl = activeBlobUrl;
+        }
       } catch (e) {
-        console.warn("Dropbox API stream failed, attempting standard direct URL:", e);
+        console.warn("Dropbox API download fallback failed:", e);
       }
     }
 
@@ -1593,7 +1634,7 @@
 
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (!arrayBuf && playableUrl) {
+      if (!arrayBuf && playableUrl && !playableUrl.startsWith('blob:')) {
         const res = await fetch(playableUrl);
         arrayBuf = await res.arrayBuffer();
       }
