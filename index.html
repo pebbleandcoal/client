@@ -634,16 +634,30 @@
       white-space: pre-wrap;
       word-break: break-word;
     }
+    .seg-text-display {
+      background: rgba(9, 13, 22, 0.35);
+      border: 1px solid transparent;
+      color: #e2e8f0;
+      padding: 6px 8px;
+      border-radius: 5px;
+      font-family: inherit;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      min-height: 36px;
+      user-select: text;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
     .seg-text-input {
       background: rgba(9, 13, 22, 0.5);
-      border: 1px solid transparent;
+      border: 1px solid #334155;
       color: var(--text);
       padding: 5px 7px;
       border-radius: 5px;
       font-family: inherit;
       font-size: 0.86rem;
       line-height: 1.45;
-      resize: none;
+      resize: vertical;
       width: 100%;
       min-height: 36px;
     }
@@ -805,7 +819,6 @@
 </head>
 <body>
 
-<!-- Hidden File Input for Master Retake CSV Upload -->
 <input type="file" id="masterCsvFileInput" accept=".csv" style="display: none;">
 
 <!-- Client Passcode Modal -->
@@ -823,7 +836,7 @@
 <!-- Admin Login Verification Modal -->
 <div id="adminAuthModal" class="overlay-backdrop" style="display:none;">
   <div class="modal-box" style="text-align: center;">
-    <div style="font-size: 2rem;">🛡️️</div>
+    <div style="font-size: 2rem;">🛡</div>
     <h3>Admin Verification</h3>
     <p>Enter the master admin password to configure this portal.</p>
     <input type="password" id="adminPassInput" placeholder="Master Password" autofocus>
@@ -933,19 +946,19 @@
 
       <span class="bar-divider"></span>
 
-      <!-- Admin Only Master CSV Controls -->
-      <span class="bar-section-label" id="masterCsvLabel" style="display:none;">MASTER CSV:</span>
+      <!-- Master CSV Controls -->
+      <span class="bar-section-label">MASTER CSV:</span>
       <button class="btn-xs" id="btnUploadMasterCsv" style="display:none; color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Upload a master retake CSV sheet to import revisions">
         ⬆ Upload Master CSV
       </button>
-      <button class="btn-xs" id="btnDownloadMasterCsv" style="display:none; color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" title="Download the full Master Retake CSV sheet">
+      <button class="btn-xs" id="btnDownloadMasterCsv" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" title="Download the complete Master Project Retake CSV sheet (All Chapters)">
         ⬇ Download Master CSV
       </button>
-      <span class="bar-divider" id="masterCsvDivider" style="display:none;"></span>
+
+      <span class="bar-divider"></span>
 
       <span class="bar-section-label">EXPORTS:</span>
       <button class="btn-xs" id="btnExportTxt" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">Notes (.txt)</button>
-      <button class="btn-xs" id="btnExportCsv" title="Export flagged errors from current chapter">Chapter CSV</button>
 
       <button class="btn-xs btn-xs-danger" id="btnClearStorage" style="margin-left: auto;" title="Clear local cache for this chapter and reload">
         Reset Chapter
@@ -1042,8 +1055,6 @@
 
   const btnUploadMasterCsv = document.getElementById('btnUploadMasterCsv');
   const btnDownloadMasterCsv = document.getElementById('btnDownloadMasterCsv');
-  const masterCsvLabel = document.getElementById('masterCsvLabel');
-  const masterCsvDivider = document.getElementById('masterCsvDivider');
   const btnManualSave = document.getElementById('btnManualSave');
   const saveTimeDisplay = document.getElementById('saveTimeDisplay');
 
@@ -1110,17 +1121,11 @@
       adminStatusBadge.classList.add('logged-in');
       adminStatusBadge.title = 'Admin is active. Click to open settings.';
       if (btnUploadMasterCsv) btnUploadMasterCsv.style.display = 'inline-flex';
-      if (btnDownloadMasterCsv) btnDownloadMasterCsv.style.display = 'inline-flex';
-      if (masterCsvLabel) masterCsvLabel.style.display = 'inline-block';
-      if (masterCsvDivider) masterCsvDivider.style.display = 'inline-block';
     } else {
       adminStatusBadge.textContent = 'Reviewer';
       adminStatusBadge.classList.remove('logged-in');
       adminStatusBadge.title = 'Click to log in as Admin.';
       if (btnUploadMasterCsv) btnUploadMasterCsv.style.display = 'none';
-      if (btnDownloadMasterCsv) btnDownloadMasterCsv.style.display = 'none';
-      if (masterCsvLabel) masterCsvLabel.style.display = 'none';
-      if (masterCsvDivider) masterCsvDivider.style.display = 'none';
     }
   }
 
@@ -1676,9 +1681,10 @@
       for (let j = 0; j < step; j++) {
         const idx = chunkStart + j;
         if (idx >= channelData.length) break;
-        const val = channelData[idx];
-        if (val < min) min = val;
-        if (val > max) max = val;
+        const val = chunkStart + j;
+        const sVal = channelData[idx];
+        if (sVal < min) min = sVal;
+        if (sVal > max) max = sVal;
       }
 
       if (max >= min) {
@@ -1935,6 +1941,13 @@
         </button>
       ` : '';
 
+      // Reviewer gets non-editable text; Admin gets editable textarea for script phrase
+      const scriptBodyHtml = isAdminSession ? `
+        <textarea class="seg-text-input" data-idx="${idx}">${seg.text}</textarea>
+      ` : `
+        <div class="seg-text-display">${escapeHtml(seg.text)}</div>
+      `;
+
       card.innerHTML = `
         <div class="seg-header" onclick="window.jumpToSegmentCueOnly(${idx})" title="Click header to cue playhead">
           <span class="cue-number">#${idx + 1}</span>
@@ -1950,7 +1963,7 @@
           </button>
         </div>
 
-        <textarea class="seg-text-input" data-idx="${idx}">${seg.text}</textarea>
+        ${scriptBodyHtml}
 
         ${revisionBannerHtml}
 
@@ -2002,18 +2015,23 @@
         </div>
       `;
 
-      card.querySelector('.seg-text-input').addEventListener('input', (e) => {
-        seg.text = e.target.value;
-        recalculateMetrics(seg);
-        updateLiveSubtitleStrip();
-        persistSessionLocal();
-      });
+      if (isAdminSession) {
+        const textInputElem = card.querySelector('.seg-text-input');
+        if (textInputElem) {
+          textInputElem.addEventListener('input', (e) => {
+            seg.text = e.target.value;
+            recalculateMetrics(seg);
+            updateLiveSubtitleStrip();
+            queueAutoSave();
+          });
+        }
+      }
 
       card.querySelector('.flag-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         seg.flagged = !seg.flagged;
-        persistSessionLocal();
         renderTranscript();
+        queueAutoSave();
       });
 
       if (isAdminSession) {
@@ -2035,12 +2053,12 @@
 
       card.querySelector('.error-type').addEventListener('change', (e) => {
         seg.errorType = e.target.value;
-        persistSessionLocal();
+        queueAutoSave();
       });
 
       card.querySelector('.reviewer-note-input').addEventListener('input', (e) => {
         seg.note = e.target.value;
-        persistSessionLocal();
+        queueAutoSave();
       });
 
       if (isAdminSession) {
@@ -2052,9 +2070,9 @@
             if (seg.isRevision && !seg.flagged) {
               seg.flagged = true;
             }
-            persistSessionLocal();
             updateFilterCounts();
             drawWaveform();
+            queueAutoSave();
           });
 
           revField.addEventListener('blur', () => {
@@ -2084,7 +2102,7 @@
     seg.note = seg.note ? `${seg.note}; ${textToAdd}` : textToAdd;
     const textarea = document.querySelector(`#drawer-${idx} .reviewer-note-input`);
     if (textarea) textarea.value = seg.note;
-    persistSessionLocal();
+    queueAutoSave();
   };
 
   window.playSegment = function(idx) {
@@ -2229,8 +2247,8 @@
       const segIdx = segments.findIndex(s => cur >= s.start && cur < s.end);
       if (segIdx !== -1) {
         segments[segIdx].flagged = !segments[segIdx].flagged;
-        persistSessionLocal();
         renderTranscript();
+        queueAutoSave();
       }
     }
   });
@@ -2260,19 +2278,22 @@
     flagCounter.textContent = `${flagged} ${flagged === 1 ? 'Error' : 'Errors'} Flagged`;
   }
 
-  // Flush live active DOM textarea values into javascript segment objects
   function syncDomToMemory() {
     segments.forEach((seg, idx) => {
-      const textElem = document.querySelector(`.seg-text-input[data-idx="${idx}"]`);
-      if (textElem) seg.text = textElem.value;
+      if (isAdminSession) {
+        const textElem = document.querySelector(`.seg-text-input[data-idx="${idx}"]`);
+        if (textElem) seg.text = textElem.value;
+      }
 
       const noteElem = document.querySelector(`.reviewer-note-input[data-idx="${idx}"]`);
       if (noteElem) seg.note = noteElem.value;
 
-      const revElem = document.querySelector(`.revision-input-field[data-idx="${idx}"]`);
-      if (revElem) {
-        seg.revisionText = revElem.value;
-        seg.isRevision = Boolean(seg.revisionText.trim());
+      if (isAdminSession) {
+        const revElem = document.querySelector(`.revision-input-field[data-idx="${idx}"]`);
+        if (revElem) {
+          seg.revisionText = revElem.value;
+          seg.isRevision = Boolean(seg.revisionText.trim());
+        }
       }
     });
   }
@@ -2372,7 +2393,7 @@
       byFile[fileKey].push(r);
     });
 
-    // Reset current segments to baseline before applying so removed revisions are wiped
+    // 1. Wipe current track memory
     segments.forEach(s => {
       s.revisionText = '';
       s.isRevision = false;
@@ -2380,6 +2401,25 @@
       s.note = '';
     });
 
+    // 2. Wipe ALL other tracks in localStorage
+    TRACKS.forEach(track => {
+      const key = getStorageKeyForTrack(track.title);
+      const savedRaw = localStorage.getItem(key);
+      if (savedRaw) {
+        try {
+          const trackSegs = JSON.parse(savedRaw);
+          trackSegs.forEach(s => {
+            s.revisionText = '';
+            s.isRevision = false;
+            s.flagged = false;
+            s.note = '';
+          });
+          localStorage.setItem(key, JSON.stringify(trackSegs));
+        } catch(e) {}
+      }
+    });
+
+    // 3. Populate matching records
     const currentRecords = byFile[currentTrackTitle] || [];
     currentRecords.forEach(rec => {
       const cueNum = parseInt(rec['cue #'], 10);
@@ -2404,23 +2444,16 @@
       }
     });
 
-    // Reset other cached tracks as well
+    // 4. Populate other tracks
     TRACKS.forEach(track => {
       if (track.title === currentTrackTitle) return;
       const key = getStorageKeyForTrack(track.title);
       const fileRecs = byFile[track.title] || [];
       const savedRaw = localStorage.getItem(key);
-      if (!savedRaw) return;
+      if (!savedRaw || !fileRecs.length) return;
 
       try {
         const trackSegs = JSON.parse(savedRaw);
-        trackSegs.forEach(s => {
-          s.revisionText = '';
-          s.isRevision = false;
-          s.flagged = false;
-          s.note = '';
-        });
-
         fileRecs.forEach(rec => {
           const cueNum = parseInt(rec['cue #'], 10);
           const revisionText = (rec['revision'] || '').trim();
@@ -2440,7 +2473,7 @@
       } catch(e) {}
     });
 
-    persistSessionLocal(false);
+    persistSessionLocal();
     renderTranscript();
     updateLiveSubtitleStrip();
     drawWaveform();
@@ -2454,6 +2487,7 @@
   // REMOTE PERSISTENCE ENGINE & TIME DISPLAY
   // ==========================================================
   let isSavingRemote = false;
+  let autoSaveTimeout = null;
 
   function updateSaveTimeBadge() {
     const now = new Date();
@@ -2468,8 +2502,7 @@
     const path = localStorage.getItem(getScopedKey('qc_gh_path')) || 'Master_Retake_Sheet.csv';
     const token = localStorage.getItem(getScopedKey('qc_gh_token'));
 
-    // Always persist local storage
-    persistSessionLocal(false);
+    persistSessionLocal();
 
     if (!repo || !token || isSavingRemote) {
       updateSaveTimeBadge();
@@ -2526,6 +2559,15 @@
     }
   }
 
+  function queueAutoSave() {
+    persistSessionLocal();
+    updateSaveTimeBadge();
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+      executeRemoteSave();
+    }, 1200);
+  }
+
   async function fetchAndSyncMasterCsv() {
     const repo = localStorage.getItem(getScopedKey('qc_gh_repo'));
     const path = localStorage.getItem(getScopedKey('qc_gh_path')) || 'Master_Retake_Sheet.csv';
@@ -2547,9 +2589,7 @@
       if (res.ok) {
         const data = await res.json();
         const decodedCsv = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
-        if (decodedCsv.trim().length > 0) {
-          applyMasterRetakeCsv(decodedCsv, true);
-        }
+        applyMasterRetakeCsv(decodedCsv, true);
       }
     } catch (e) {
       console.warn("Could not fetch remote master sheet:", e);
@@ -2582,7 +2622,7 @@
     downloadBlob(csvContent, `Master_Project_Retake_Sheet.csv`, 'text/csv;charset=utf-8');
   });
 
-  function persistSessionLocal(triggerRemote = false) {
+  function persistSessionLocal() {
     const key = getStorageKey();
     if (!key || !segments.length) return;
     const payload = segments.map(s => ({
@@ -2658,17 +2698,6 @@
       txt += `----------------------------------------\n\n`;
     });
     downloadBlob(txt, `${currentTrackTitle.replace(/\s+/g, '_')}_review_notes.txt`, 'text/plain;charset=utf-8');
-  });
-
-  // Export Chapter CSV accurately reflecting live screen data
-  document.getElementById('btnExportCsv').addEventListener('click', () => {
-    syncDomToMemory();
-    persistSessionLocal(false);
-    const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note', 'Revision'];
-    const rows = generateCsvFromSegments(segments, currentTrackTitle);
-    if (!rows.length) return alert('No errors or revisions currently marked for this chapter.');
-    const csvContent = [headers.join(','), ...rows].join('\n');
-    downloadBlob(csvContent, `${currentTrackTitle.replace(/\s+/g, '_')}_retakes.csv`, 'text/csv;charset=utf-8');
   });
 
   // Entry Point
