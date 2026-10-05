@@ -294,7 +294,7 @@
       font-size: 0.68rem;
       font-family: monospace;
       color: var(--muted);
-      max-width: 220px;
+      max-width: 280px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -712,12 +712,6 @@
     .revision-input-field:focus {
       border-color: var(--success) !important;
     }
-    .revision-input-field:read-only {
-      background: #081118 !important;
-      border-color: #243547 !important;
-      color: #94a3b8 !important;
-      cursor: not-allowed;
-    }
     .overlay-backdrop {
       position: fixed;
       inset: 0;
@@ -740,16 +734,16 @@
       gap: 14px;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
-    .modal-box.admin-mode { max-width: 680px; }
+    .modal-box.admin-mode { max-width: 720px; }
     .modal-box h3 { margin: 0; font-size: 1.2rem; color: #fff; }
     .modal-box p { margin: 0; font-size: 0.85rem; color: var(--muted); }
     .modal-box input[type="password"], .modal-box input[type="text"], .modal-box textarea {
       background: #090d16;
       border: 1px solid var(--border);
       color: #fff;
-      padding: 10px 12px;
+      padding: 8px 12px;
       border-radius: 6px;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       outline: none;
       font-family: inherit;
     }
@@ -758,7 +752,7 @@
       font-size: 0.82rem;
       line-height: 1.5;
       resize: vertical;
-      min-height: 200px;
+      min-height: 140px;
       white-space: pre;
     }
     .modal-box input:focus, .modal-box textarea:focus { border-color: var(--accent); }
@@ -788,6 +782,14 @@
       font-size: 0.8rem;
       display: none;
       text-align: center;
+    }
+    .admin-grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 600px) {
+      .admin-grid-2col { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -830,23 +832,43 @@
 <div id="adminModal" class="overlay-backdrop" style="display:none;">
   <div class="modal-box admin-mode">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Portal Settings</h3>
+      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Settings & GitHub Auto-Sync</h3>
       <button class="btn-secondary" id="btnCloseAdmin" style="padding:4px 8px;">✕</button>
+    </div>
+
+    <!-- GitHub Sync Configuration -->
+    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; display:flex; flex-direction:column; gap:8px;">
+      <span style="font-size: 0.8rem; font-weight: 800; color: #6ee7b7; letter-spacing: 0.05em;">🐙 GITHUB CSV AUTO-SYNC CONFIGURATION</span>
+      
+      <div class="admin-grid-2col">
+        <div>
+          <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:3px;">GitHub Repository (owner/repo):</label>
+          <input type="text" id="adminGhRepo" placeholder="e.g. username/audiobook-qc" style="width: 100%;">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:3px;">CSV Target Path in Repo:</label>
+          <input type="text" id="adminGhPath" placeholder="e.g. data/Master_Retake_Sheet.csv" style="width: 100%;">
+        </div>
+      </div>
+
+      <div>
+        <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:3px;">Personal Access Token (PAT) with repo/contents write:</label>
+        <input type="password" id="adminGhToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="width: 100%;">
+      </div>
+      <span style="font-size:0.7rem; color:var(--muted);">When filled, any changes, flags, or revisions are automatically committed to your GitHub repository in the background.</span>
     </div>
 
     <div style="display:flex; flex-direction:column; gap:6px;">
       <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Client Passcode (Leave blank for public access):</label>
       <input type="text" id="adminClientPassSetting" placeholder="e.g. client2026 (blank = public access)">
-      <span style="font-size:0.75rem; color:var(--muted);">When empty, reviewers access the portal directly without passwords.</span>
     </div>
 
-    <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+    <div style="display:flex; flex-direction:column; gap:6px;">
       <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Dropbox Tracks & Transcripts:</label>
-      <p style="margin:0;">Paste Dropbox links directly (one per line). Titles and matching VTT filenames are detected automatically:</p>
-      <textarea id="adminTrackInput" spellcheck="false" placeholder="https://www.dropbox.com/scl/fi/hd5rtkbnsv8zqpghybm1v/Chapter-1.mp3?rlkey=pej9w8uhcq3sn1blke08omsyh&st=rcw47ge5&dl=0&#10;https://www.dropbox.com/scl/fi/lf2grph87sg6nzu4gmxxc/Chapter-2.mp3?rlkey=2b7vpuh779mvckns2gxzz23dy&st=pb7p805x&dl=0"></textarea>
+      <textarea id="adminTrackInput" spellcheck="false" placeholder="Paste Dropbox links directly (one per line)..."></textarea>
     </div>
 
-    <div style="display:flex; gap:10px; justify-content: space-between; align-items:center; margin-top:8px;">
+    <div style="display:flex; gap:10px; justify-content: space-between; align-items:center;">
       <button class="btn-secondary" id="btnForgetAdminAuth" style="color:#fda4af;">Forget Admin Login</button>
       <div style="display:flex; gap:10px;">
         <button class="btn-secondary" id="btnResetDefault">Reset to Defaults</button>
@@ -895,15 +917,16 @@
 
     <!-- Action Bar (Master CSV & Retakes) -->
     <div class="compact-action-bar" id="compactActionBar">
+      <!-- Admin Only Master CSV Controls -->
       <span class="bar-section-label" id="masterCsvLabel" style="display:none;">MASTER RETAKE CSV:</span>
       <button class="btn-xs" id="btnUploadMasterCsv" style="display:none; color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Upload a master retake CSV sheet to import revisions">
         ⬆ Upload Master CSV
       </button>
-      <button class="btn-xs" id="btnDownloadMasterCsv" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" title="Download the full Master Retake CSV sheet including all revisions">
+      <button class="btn-xs" id="btnDownloadMasterCsv" style="display:none; color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" title="Download the full Master Retake CSV sheet including all revisions">
         ⬇ Download Master CSV
       </button>
 
-      <span class="bar-divider"></span>
+      <span class="bar-divider" id="masterCsvDivider" style="display:none;"></span>
 
       <span class="bar-section-label">EXPORTS:</span>
       <button class="btn-xs" id="btnExportTxt" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">Notes (.txt)</button>
@@ -949,7 +972,7 @@
       </div>
     </div>
 
-    <!-- Player Bar (Auto-scroll & Preserve Pitch defaults applied, toggles hidden) -->
+    <!-- Player Bar (Cleaned: Auto-scroll & Preserve Pitch defaults applied) -->
     <div class="player-row">
       <audio id="audioPlayer" controls></audio>
     </div>
@@ -983,7 +1006,7 @@
 
 <script>
   // ==========================================================
-  // 1. AUTHENTICATION & ADMIN PERMISSIONS
+  // 1. AUTHENTICATION & REMEMBER ME
   // ==========================================================
   const MASTER_ADMIN_PASSWORD = "1";
   const PATH_KEY = window.location.pathname.replace(/index\.html$/i, '');
@@ -1005,7 +1028,9 @@
   const adminStatusBadge = document.getElementById('adminStatusBadge');
 
   const btnUploadMasterCsv = document.getElementById('btnUploadMasterCsv');
+  const btnDownloadMasterCsv = document.getElementById('btnDownloadMasterCsv');
   const masterCsvLabel = document.getElementById('masterCsvLabel');
+  const masterCsvDivider = document.getElementById('masterCsvDivider');
 
   function checkClientAccess() {
     const requiredPass = getClientPassword();
@@ -1056,6 +1081,10 @@
   const appTitle = document.getElementById('appTitle');
   const btnAdminTrigger = document.getElementById('btnAdminTrigger');
 
+  const adminGhRepo = document.getElementById('adminGhRepo');
+  const adminGhPath = document.getElementById('adminGhPath');
+  const adminGhToken = document.getElementById('adminGhToken');
+
   function isAdminRemembered() {
     return localStorage.getItem(getScopedKey('qc_admin_remembered')) === 'true';
   }
@@ -1067,13 +1096,17 @@
       adminStatusBadge.classList.add('logged-in');
       adminStatusBadge.title = 'Admin is active. Click to open settings.';
       if (btnUploadMasterCsv) btnUploadMasterCsv.style.display = 'inline-flex';
+      if (btnDownloadMasterCsv) btnDownloadMasterCsv.style.display = 'inline-flex';
       if (masterCsvLabel) masterCsvLabel.style.display = 'inline-block';
+      if (masterCsvDivider) masterCsvDivider.style.display = 'inline-block';
     } else {
       adminStatusBadge.textContent = 'Reviewer';
       adminStatusBadge.classList.remove('logged-in');
       adminStatusBadge.title = 'Click to log in as Admin.';
       if (btnUploadMasterCsv) btnUploadMasterCsv.style.display = 'none';
+      if (btnDownloadMasterCsv) btnDownloadMasterCsv.style.display = 'none';
       if (masterCsvLabel) masterCsvLabel.style.display = 'none';
+      if (masterCsvDivider) masterCsvDivider.style.display = 'none';
     }
   }
 
@@ -1125,7 +1158,7 @@
     sessionStorage.removeItem(getScopedKey('qc_admin_active'));
     updateAdminStatusUI();
     renderTranscript();
-    alert("Admin logged out. Upload Master CSV and Add Revision are now hidden.");
+    alert("Admin logged out. Master CSV upload/download and Add Revision are now hidden.");
   });
 
   let titleClicks = 0;
@@ -1156,6 +1189,9 @@
   function openAdminPanel() {
     adminClientPassSetting.value = getClientPassword();
     adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
+    adminGhRepo.value = localStorage.getItem(getScopedKey('qc_gh_repo')) || '';
+    adminGhPath.value = localStorage.getItem(getScopedKey('qc_gh_path')) || 'Master_Retake_Sheet.csv';
+    adminGhToken.value = localStorage.getItem(getScopedKey('qc_gh_token')) || '';
     adminModal.style.display = 'flex';
   }
 
@@ -1168,6 +1204,11 @@
     } else {
       localStorage.removeItem(getScopedKey('qc_client_password'));
     }
+
+    // Save GitHub sync settings
+    localStorage.setItem(getScopedKey('qc_gh_repo'), adminGhRepo.value.trim());
+    localStorage.setItem(getScopedKey('qc_gh_path'), adminGhPath.value.trim());
+    localStorage.setItem(getScopedKey('qc_gh_token'), adminGhToken.value.trim());
 
     const rawLines = adminTrackInput.value.trim().split('\n').map(l => l.trim()).filter(Boolean);
     const newTracks = [];
@@ -1195,7 +1236,7 @@
     }
 
     adminModal.style.display = 'none';
-    alert(`Saved ${newTracks.length} tracks successfully!`);
+    alert(`Settings saved successfully!`);
     renderTrackGrid();
     loadTrack(0);
   });
@@ -1273,7 +1314,6 @@
   // 2. CORE QC & WAVEFORM ENGINE
   // ==========================================================
   const audioPlayer = document.getElementById('audioPlayer');
-  // Always preserve pitch by default
   audioPlayer.preservesPitch = true;
 
   const waveCanvas = document.getElementById('waveCanvas');
@@ -1309,7 +1349,6 @@
   const btnClearStorage = document.getElementById('btnClearStorage');
 
   const masterCsvFileInput = document.getElementById('masterCsvFileInput');
-  const btnDownloadMasterCsv = document.getElementById('btnDownloadMasterCsv');
   const diskSaveStatus = document.getElementById('diskSaveStatus');
 
   let currentTrackTitle = "Chapter 1";
@@ -2007,7 +2046,7 @@
             seg.revisionText = e.target.value;
             seg.isRevision = Boolean(seg.revisionText.trim());
             if (seg.isRevision && !seg.flagged) {
-              seg.flagged = true; // Auto-flag cue on revision
+              seg.flagged = true;
             }
             persistSessionLocal();
             updateFilterCounts();
@@ -2121,7 +2160,7 @@
         activeCard.classList.add('active');
         currentActiveId = activeCard.id;
 
-        // Auto-scroll is always active by default
+        // Auto-scroll is permanently active
         const targetScroll = activeCard.offsetTop - (transcriptDiv.clientHeight / 2) + (activeCard.clientHeight / 2);
         transcriptDiv.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
       }
@@ -2208,7 +2247,7 @@
   function updateFilterCounts() {
     countAll.textContent = segments.length;
     
-    // For reviewer, flagged count represents unrevised flagged cues
+    // For reviewer, flagged count only represents unrevised flagged cues
     const flagged = segments.filter(s => {
       if (!s.flagged) return false;
       if (!isAdminSession && hasActiveRevision(s)) return false;
@@ -2222,8 +2261,7 @@
   }
 
   // ==========================================================
-  // 3. MASTER RETAKE CSV IMPORT & EXPORT
-  // Header: File, Cue #, Time Start, Time End, Issue Type, Script Phrase, Reviewer Note, Revision
+  // 3. MASTER RETAKE CSV IMPORT, EXPORT & GITHUB AUTO-SYNC
   // ==========================================================
   function formatCsvCell(val) {
     return `"${(val || '').toString().replace(/"/g, '""')}"`;
@@ -2387,6 +2425,86 @@
     alert(`Successfully synced Master Retake CSV! ${appliedCount} cue records loaded/updated.`);
   }
 
+  // ==========================================================
+  // GITHUB AUTO-SAVE REST API ENGINE
+  // ==========================================================
+  let ghSaveTimeout = null;
+  let isGhSaving = false;
+
+  async function syncCsvToGitHub(csvContent) {
+    const repo = localStorage.getItem(getScopedKey('qc_gh_repo'));
+    const path = localStorage.getItem(getScopedKey('qc_gh_path')) || 'Master_Retake_Sheet.csv';
+    const token = localStorage.getItem(getScopedKey('qc_gh_token'));
+
+    if (!repo || !token || isGhSaving) return;
+
+    isGhSaving = true;
+    diskSaveStatus.textContent = "Syncing to GitHub...";
+
+    try {
+      const cleanPath = path.replace(/^\//, '');
+      const apiUrl = `https://api.github.com/repos/${repo}/contents/${cleanPath}`;
+
+      // 1. Get current SHA if file exists
+      let fileSha = null;
+      try {
+        const getRes = await fetch(apiUrl, {
+          headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        if (getRes.ok) {
+          const fileData = await getRes.json();
+          fileSha = fileData.sha;
+        }
+      } catch(err) {}
+
+      // 2. Base64 UTF-8 encode
+      const base64Content = btoa(unescape(encodeURIComponent(csvContent)));
+
+      // 3. Put / Commit file
+      const putBody = {
+        message: `Auto-save audio retakes [${currentTrackTitle}]`,
+        content: base64Content
+      };
+      if (fileSha) putBody.sha = fileSha;
+
+      const putRes = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(putBody)
+      });
+
+      if (putRes.ok) {
+        diskSaveStatus.textContent = "Saved to GitHub ✔";
+      } else {
+        const errJson = await putRes.json();
+        diskSaveStatus.textContent = `GitHub error: ${errJson.message || 'commit failed'}`;
+      }
+    } catch(e) {
+      console.error("GitHub Auto-Save failed:", e);
+      diskSaveStatus.textContent = "GitHub sync error";
+    } finally {
+      isGhSaving = false;
+      setTimeout(() => { 
+        if (diskSaveStatus.textContent.includes('GitHub')) diskSaveStatus.textContent = ""; 
+      }, 4000);
+    }
+  }
+
+  function queueGitHubAutoSave() {
+    clearTimeout(ghSaveTimeout);
+    ghSaveTimeout = setTimeout(() => {
+      const csv = buildMasterCsvString();
+      syncCsvToGitHub(csv);
+    }, 2500); // 2.5s debounce to batch quick typing changes
+  }
+
   btnUploadMasterCsv.addEventListener('click', () => {
     masterCsvFileInput.value = '';
     masterCsvFileInput.click();
@@ -2423,8 +2541,13 @@
       note: s.note || ''
     }));
     localStorage.setItem(key, JSON.stringify(payload));
-    diskSaveStatus.textContent = "Saved to browser";
-    setTimeout(() => { diskSaveStatus.textContent = ""; }, 2000);
+    diskSaveStatus.textContent = "Saved locally";
+    setTimeout(() => { 
+      if (diskSaveStatus.textContent === "Saved locally") diskSaveStatus.textContent = ""; 
+    }, 2000);
+
+    // Trigger debounced GitHub auto-sync
+    queueGitHubAutoSave();
   }
 
   function loadSession() {
