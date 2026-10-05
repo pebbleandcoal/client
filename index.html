@@ -153,13 +153,6 @@
       width: 100%;
     }
     audio { flex: 1; height: 36px; }
-    .player-toggles {
-      display: flex;
-      gap: 10px;
-      font-size: 0.78rem;
-      white-space: nowrap;
-      user-select: none;
-    }
     .waveform-outer {
       position: relative;
       display: flex;
@@ -902,8 +895,8 @@
 
     <!-- Action Bar (Master CSV & Retakes) -->
     <div class="compact-action-bar" id="compactActionBar">
-      <span class="bar-section-label">MASTER RETAKE CSV:</span>
-      <button class="btn-xs" id="btnUploadMasterCsv" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Upload a master retake CSV sheet to import revisions">
+      <span class="bar-section-label" id="masterCsvLabel" style="display:none;">MASTER RETAKE CSV:</span>
+      <button class="btn-xs" id="btnUploadMasterCsv" style="display:none; color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Upload a master retake CSV sheet to import revisions">
         ⬆ Upload Master CSV
       </button>
       <button class="btn-xs" id="btnDownloadMasterCsv" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" title="Download the full Master Retake CSV sheet including all revisions">
@@ -956,13 +949,9 @@
       </div>
     </div>
 
-    <!-- Player Bar -->
+    <!-- Player Bar (Auto-scroll & Preserve Pitch defaults applied, toggles hidden) -->
     <div class="player-row">
       <audio id="audioPlayer" controls></audio>
-      <div class="player-toggles">
-        <label><input type="checkbox" id="autoscrollToggle" checked> Auto-Scroll</label>
-        <label><input type="checkbox" id="pitchToggle" checked> Preserve Pitch</label>
-      </div>
     </div>
 
     <!-- Playback Controls -->
@@ -1014,6 +1003,9 @@
   const btnUnlock = document.getElementById('btnUnlock');
   const authError = document.getElementById('authError');
   const adminStatusBadge = document.getElementById('adminStatusBadge');
+
+  const btnUploadMasterCsv = document.getElementById('btnUploadMasterCsv');
+  const masterCsvLabel = document.getElementById('masterCsvLabel');
 
   function checkClientAccess() {
     const requiredPass = getClientPassword();
@@ -1074,10 +1066,14 @@
       adminStatusBadge.textContent = 'Admin Mode';
       adminStatusBadge.classList.add('logged-in');
       adminStatusBadge.title = 'Admin is active. Click to open settings.';
+      if (btnUploadMasterCsv) btnUploadMasterCsv.style.display = 'inline-flex';
+      if (masterCsvLabel) masterCsvLabel.style.display = 'inline-block';
     } else {
       adminStatusBadge.textContent = 'Reviewer';
       adminStatusBadge.classList.remove('logged-in');
       adminStatusBadge.title = 'Click to log in as Admin.';
+      if (btnUploadMasterCsv) btnUploadMasterCsv.style.display = 'none';
+      if (masterCsvLabel) masterCsvLabel.style.display = 'none';
     }
   }
 
@@ -1129,7 +1125,7 @@
     sessionStorage.removeItem(getScopedKey('qc_admin_active'));
     updateAdminStatusUI();
     renderTranscript();
-    alert("Admin logged out. Revision text is now read-only.");
+    alert("Admin logged out. Upload Master CSV and Add Revision are now hidden.");
   });
 
   let titleClicks = 0;
@@ -1277,6 +1273,9 @@
   // 2. CORE QC & WAVEFORM ENGINE
   // ==========================================================
   const audioPlayer = document.getElementById('audioPlayer');
+  // Always preserve pitch by default
+  audioPlayer.preservesPitch = true;
+
   const waveCanvas = document.getElementById('waveCanvas');
   const waveWrap = document.getElementById('waveWrap');
   const waveModeBadge = document.getElementById('waveModeBadge');
@@ -1296,8 +1295,6 @@
 
   const transcriptDiv = document.getElementById('transcript');
   const statusDiv = document.getElementById('status');
-  const autoscrollToggle = document.getElementById('autoscrollToggle');
-  const pitchToggle = document.getElementById('pitchToggle');
   const flagCounter = document.getElementById('flagCounter');
   const countAll = document.getElementById('countAll');
   const countFlagged = document.getElementById('countFlagged');
@@ -1312,7 +1309,6 @@
   const btnClearStorage = document.getElementById('btnClearStorage');
 
   const masterCsvFileInput = document.getElementById('masterCsvFileInput');
-  const btnUploadMasterCsv = document.getElementById('btnUploadMasterCsv');
   const btnDownloadMasterCsv = document.getElementById('btnDownloadMasterCsv');
   const diskSaveStatus = document.getElementById('diskSaveStatus');
 
@@ -1857,7 +1853,14 @@
 
     segments.forEach((seg, idx) => {
       const revActive = hasActiveRevision(seg);
-      if (activeFilter === 'flagged' && !seg.flagged) return;
+      
+      // Filter logic:
+      // Reviewers under "Flagged" only see cues that are flagged AND NOT yet revised.
+      // Admins see all flagged cues under flagged.
+      if (activeFilter === 'flagged') {
+        if (!seg.flagged) return;
+        if (!isAdminSession && revActive) return;
+      }
       if (activeFilter === 'revisions' && !revActive) return;
       if (selectedError && seg.errorType !== selectedError) return;
 
@@ -1880,6 +1883,13 @@
           </div>
           <div class="rev-banner-text">${escapeHtml(seg.revisionText)}</div>
         </div>
+      ` : '';
+
+      // Revision button/pill is ONLY displayed for admins
+      const revisionButtonHtml = isAdminSession ? `
+        <button class="revision-btn ${revActive ? 'is-revision' : ''}" data-idx="${idx}" title="Open drawer to edit revision text">
+          ✎ ${revActive ? 'Has Revision' : 'Add Revision'}
+        </button>
       ` : '';
 
       card.innerHTML = `
@@ -1906,14 +1916,12 @@
             ⚑ ${seg.flagged ? 'Flagged' : 'Flag Issue'}
           </button>
 
-          <button class="revision-btn ${revActive ? 'is-revision' : ''}" data-idx="${idx}" title="Open drawer to inspect or edit revision text">
-            ✎ ${revActive ? 'Has Revision' : 'Add Revision'}
-          </button>
+          ${revisionButtonHtml}
 
           <span style="font-size: 0.74rem; color: var(--muted); margin-left: 4px;">${seg.flagged ? seg.errorType : ''}</span>
         </div>
 
-        <div class="comment-drawer ${seg.flagged || revActive ? 'open' : ''}" id="drawer-${idx}">
+        <div class="comment-drawer ${seg.flagged || (isAdminSession && revActive) ? 'open' : ''}" id="drawer-${idx}">
           <div class="row">
             <label style="font-size: 0.76rem; color: var(--muted);">Issue Type:</label>
             <select class="error-type" data-idx="${idx}">
@@ -1939,15 +1947,15 @@
           <label style="font-size: 0.74rem; font-weight: 600; color: var(--muted); margin-top: 4px;">Reviewer Note:</label>
           <textarea class="reviewer-note-input" placeholder="Describe error or notes..." data-idx="${idx}">${seg.note || ''}</textarea>
 
-          <label style="font-size: 0.74rem; font-weight: 700; color: #6ee7b7; margin-top: 4px; display:flex; justify-content:space-between; align-items:center;">
-            <span>Revision / Retake Direction:</span>
-            ${!canEditRevision ? '<span style="font-size:0.68rem; font-weight:normal; color:var(--muted);">(Admin login required to edit)</span>' : ''}
-          </label>
-          <textarea 
-            class="revision-input-field" 
-            data-idx="${idx}" 
-            placeholder="${canEditRevision ? 'Enter revision text / retake correction instructions...' : 'Revision text is view-only for reviewers...'}"
-            ${!canEditRevision ? 'readonly' : ''}>${seg.revisionText || ''}</textarea>
+          ${isAdminSession ? `
+            <label style="font-size: 0.74rem; font-weight: 700; color: #6ee7b7; margin-top: 4px; display:flex; justify-content:space-between; align-items:center;">
+              <span>Revision / Retake Direction:</span>
+            </label>
+            <textarea 
+              class="revision-input-field" 
+              data-idx="${idx}" 
+              placeholder="Enter revision text / retake correction instructions...">${seg.revisionText || ''}</textarea>
+          ` : ''}
         </div>
       `;
 
@@ -1965,17 +1973,22 @@
         renderTranscript();
       });
 
-      card.querySelector('.revision-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        const drawer = document.getElementById(`drawer-${idx}`);
-        if (drawer) {
-          drawer.classList.toggle('open');
-          const revBox = drawer.querySelector('.revision-input-field');
-          if (revBox && drawer.classList.contains('open') && canEditRevision) {
-            revBox.focus();
-          }
+      if (isAdminSession) {
+        const revBtn = card.querySelector('.revision-btn');
+        if (revBtn) {
+          revBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const drawer = document.getElementById(`drawer-${idx}`);
+            if (drawer) {
+              drawer.classList.toggle('open');
+              const revBox = drawer.querySelector('.revision-input-field');
+              if (revBox && drawer.classList.contains('open')) {
+                revBox.focus();
+              }
+            }
+          });
         }
-      });
+      }
 
       card.querySelector('.error-type').addEventListener('change', (e) => {
         seg.errorType = e.target.value;
@@ -1987,23 +2000,24 @@
         persistSessionLocal();
       });
 
-      const revField = card.querySelector('.revision-input-field');
-      if (revField && canEditRevision) {
-        revField.addEventListener('input', (e) => {
-          seg.revisionText = e.target.value;
-          seg.isRevision = Boolean(seg.revisionText.trim());
-          if (seg.isRevision && !seg.flagged) {
-            seg.flagged = true; // Auto-flag cue on revision
-          }
-          persistSessionLocal();
-          updateFilterCounts();
-          drawWaveform();
-        });
+      if (isAdminSession) {
+        const revField = card.querySelector('.revision-input-field');
+        if (revField) {
+          revField.addEventListener('input', (e) => {
+            seg.revisionText = e.target.value;
+            seg.isRevision = Boolean(seg.revisionText.trim());
+            if (seg.isRevision && !seg.flagged) {
+              seg.flagged = true; // Auto-flag cue on revision
+            }
+            persistSessionLocal();
+            updateFilterCounts();
+            drawWaveform();
+          });
 
-        // Re-render card when leaving revision box to ensure green banner updates cleanly
-        revField.addEventListener('blur', () => {
-          renderTranscript();
-        });
+          revField.addEventListener('blur', () => {
+            renderTranscript();
+          });
+        }
       }
 
       transcriptDiv.appendChild(card);
@@ -2107,10 +2121,9 @@
         activeCard.classList.add('active');
         currentActiveId = activeCard.id;
 
-        if (autoscrollToggle.checked) {
-          const targetScroll = activeCard.offsetTop - (transcriptDiv.clientHeight / 2) + (activeCard.clientHeight / 2);
-          transcriptDiv.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
-        }
+        // Auto-scroll is always active by default
+        const targetScroll = activeCard.offsetTop - (transcriptDiv.clientHeight / 2) + (activeCard.clientHeight / 2);
+        transcriptDiv.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
       }
     }
   });
@@ -2141,9 +2154,6 @@
     speedSlider.value = 1.0;
     audioPlayer.playbackRate = 1.0;
     speedDisplay.textContent = '1.00x';
-  });
-  pitchToggle.addEventListener('change', (e) => {
-    audioPlayer.preservesPitch = e.target.checked;
   });
 
   window.addEventListener('keydown', (e) => {
@@ -2197,7 +2207,14 @@
 
   function updateFilterCounts() {
     countAll.textContent = segments.length;
-    const flagged = segments.filter(s => s.flagged).length;
+    
+    // For reviewer, flagged count represents unrevised flagged cues
+    const flagged = segments.filter(s => {
+      if (!s.flagged) return false;
+      if (!isAdminSession && hasActiveRevision(s)) return false;
+      return true;
+    }).length;
+
     const revisions = segments.filter(s => hasActiveRevision(s)).length;
     countFlagged.textContent = flagged;
     countRevisions.textContent = revisions;
@@ -2213,7 +2230,6 @@
   }
 
   function generateCsvFromSegments(items, fileName) {
-    // Only exports cues that have flags or revision text
     const activeItems = (items || []).filter(s => s && (s.flagged === true || (s.revisionText && s.revisionText.trim())));
     return activeItems.map((s, i) => [
       formatCsvCell(fileName),
@@ -2297,7 +2313,6 @@
       return;
     }
 
-    // Group updates by file
     const byFile = {};
     records.forEach(r => {
       const fileKey = (r['file'] || currentTrackTitle).trim();
@@ -2307,7 +2322,6 @@
 
     let appliedCount = 0;
 
-    // Apply to current in-memory segments
     const currentRecords = byFile[currentTrackTitle] || [];
     currentRecords.forEach(rec => {
       const cueNum = parseInt(rec['cue #'], 10);
@@ -2335,7 +2349,6 @@
       }
     });
 
-    // Update stored tracks
     TRACKS.forEach(track => {
       if (track.title === currentTrackTitle) return;
       const key = getStorageKeyForTrack(track.title);
