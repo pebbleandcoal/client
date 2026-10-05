@@ -12,6 +12,7 @@
       --accent: #38bdf8;
       --danger: #f43f5e;
       --warning: #f59e0b;
+      --revision: #a855f7;
       --success: #10b981;
       --text: #f8fafc;
       --muted: #94a3b8;
@@ -162,7 +163,7 @@
       border: 1px solid var(--border);
       border-bottom: none;
       overflow: hidden;
-      cursor: crosshair;
+      cursor: pointer;
       user-select: none;
     }
     #waveCanvas {
@@ -188,7 +189,7 @@
       background: #040810;
       border: 1px solid var(--border);
       border-radius: 0 0 8px 8px;
-      padding: 8px 12px;
+      padding: 8px 14px;
       min-height: 42px;
       display: flex;
       justify-content: center;
@@ -198,7 +199,7 @@
     .live-sub-text {
       flex: 1;
       font-size: 0.92rem;
-      line-height: 1.35;
+      line-height: 1.3;
       font-weight: 600;
       color: #ffffff;
       text-align: center;
@@ -218,14 +219,12 @@
       align-items: center;
       justify-content: flex-start;
       gap: 6px;
-      flex-wrap: nowrap;
-      white-space: nowrap;
+      flex-wrap: wrap;
       background: #090e17;
       border: 1px solid var(--border);
       border-radius: 7px;
-      padding: 4px 8px;
+      padding: 6px 10px;
       font-size: 0.74rem;
-      overflow-x: auto;
     }
     .bar-section-label {
       font-size: 0.68rem;
@@ -233,19 +232,18 @@
       letter-spacing: 0.4px;
       color: var(--muted);
       user-select: none;
-      margin-right: 1px;
     }
     .bar-divider {
       border-left: 1px solid var(--border);
-      height: 14px;
-      margin: 0 3px;
+      height: 16px;
+      margin: 0 4px;
       flex-shrink: 0;
     }
     .btn-xs {
       background: #1e293b;
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 3px 7px;
+      padding: 4px 9px;
       font-size: 0.72rem;
       border-radius: 4px;
       cursor: pointer;
@@ -262,6 +260,11 @@
       color: var(--accent);
       border-color: var(--accent);
     }
+    .btn-xs.active-loop {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--success);
+      color: var(--success);
+    }
     .btn-xs-danger {
       color: #fda4af;
       border-color: rgba(244, 63, 94, 0.35);
@@ -272,11 +275,10 @@
       color: #fff;
     }
     #diskSaveStatus {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-family: monospace;
-      font-weight: 600;
       color: var(--muted);
-      max-width: 260px;
+      max-width: 220px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -330,17 +332,6 @@
       cursor: pointer;
     }
     .btn-nudge:hover { background: #334155; color: #fff; }
-    .btn-danger-sm {
-      background: rgba(244, 63, 94, 0.15);
-      border: 1px solid rgba(244, 63, 94, 0.35);
-      color: #fda4af;
-      padding: 2px 7px;
-      font-size: 0.7rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .btn-danger-sm:hover { background: var(--danger); color: #fff; }
     .btn-mini {
       background: #1e293b;
       border: 1px solid var(--border);
@@ -449,6 +440,10 @@
       border-color: var(--border);
       color: var(--accent);
     }
+    .filter-tab.revision-tab.active {
+      color: var(--revision);
+      border-color: rgba(168, 85, 247, 0.4);
+    }
     #status {
       font-size: 0.72rem;
       color: var(--accent);
@@ -528,19 +523,23 @@
       border-left: 4px solid var(--danger);
       background: rgba(244, 63, 94, 0.08);
     }
+    .segment.is-revision {
+      border-left: 4px solid var(--revision);
+      background: rgba(168, 85, 247, 0.08);
+    }
+    .segment.flagged.is-revision {
+      border-left: 4px solid var(--danger);
+      box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.4);
+    }
     .seg-header {
       display: flex;
       gap: 6px;
       align-items: center;
       font-size: 0.76rem;
       flex-wrap: wrap;
-      cursor: pointer;
       user-select: none;
       padding: 2px 4px;
       border-radius: 4px;
-    }
-    .seg-header:hover {
-      background: rgba(255, 255, 255, 0.04);
     }
     .cue-number {
       font-weight: 700;
@@ -571,21 +570,39 @@
     .pace-fast { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
     .pace-norm { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
     .pace-slow { background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4); }
-    .seg-text-display {
+    .badge-revision {
+      background: rgba(168, 85, 247, 0.2);
+      border: 1px solid rgba(168, 85, 247, 0.45);
+      color: #d8b4fe;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .seg-text-input {
       background: rgba(9, 13, 22, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid transparent;
       color: var(--text);
-      padding: 6px 8px;
+      padding: 5px 7px;
       border-radius: 5px;
       font-family: inherit;
       font-size: 0.86rem;
       line-height: 1.45;
-      user-select: text;
+      resize: none;
+      width: 100%;
+      min-height: 36px;
+    }
+    .seg-text-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #090d16;
     }
     .seg-footer {
       display: flex;
       gap: 6px;
       align-items: center;
+      flex-wrap: wrap;
     }
     .flag-btn {
       background: transparent;
@@ -603,6 +620,23 @@
       background: var(--danger);
       color: #fff;
       border-color: var(--danger);
+    }
+    .revision-btn {
+      background: transparent;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      color: #d8b4fe;
+      padding: 3px 7px;
+      font-size: 0.72rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .revision-btn.is-revision {
+      background: var(--revision);
+      color: #fff;
+      border-color: var(--revision);
     }
     .comment-drawer {
       display: none;
@@ -647,10 +681,10 @@
       gap: 14px;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
-    .modal-box.admin-mode { max-width: 680px; max-height: 90vh; overflow-y: auto; }
+    .modal-box.admin-mode { max-width: 680px; }
     .modal-box h3 { margin: 0; font-size: 1.2rem; color: #fff; }
     .modal-box p { margin: 0; font-size: 0.85rem; color: var(--muted); }
-    .modal-box input, .modal-box textarea {
+    .modal-box input[type="password"], .modal-box input[type="text"], .modal-box textarea {
       background: #090d16;
       border: 1px solid var(--border);
       color: #fff;
@@ -665,9 +699,10 @@
       font-size: 0.82rem;
       line-height: 1.5;
       resize: vertical;
-      min-height: 140px;
+      min-height: 200px;
       white-space: pre;
     }
+    .modal-box input:focus, .modal-box textarea:focus { border-color: var(--accent); }
     .btn-primary {
       background: #0284c7;
       color: #fff;
@@ -699,6 +734,9 @@
 </head>
 <body>
 
+<!-- Hidden File Input for Master Retake CSV Upload -->
+<input type="file" id="masterCsvFileInput" accept=".csv" style="display: none;">
+
 <!-- Client Passcode Modal -->
 <div id="authOverlay" class="overlay-backdrop" style="display:none;">
   <div class="modal-box" style="text-align: center;">
@@ -718,6 +756,11 @@
     <h3>Admin Verification</h3>
     <p>Enter the master admin password to configure this portal.</p>
     <input type="password" id="adminPassInput" placeholder="Master Password" autofocus>
+    
+    <label style="display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.8rem; color:var(--muted); cursor:pointer;">
+      <input type="checkbox" id="adminRememberMe"> Remember me on this device
+    </label>
+
     <button class="btn-primary" id="btnAdminVerify">Access Admin Panel</button>
     <div id="adminAuthError" class="modal-error">Incorrect master password.</div>
     <button class="btn-secondary" id="btnCancelAdminAuth" style="margin-top:4px;">Cancel</button>
@@ -728,36 +771,28 @@
 <div id="adminModal" class="overlay-backdrop" style="display:none;">
   <div class="modal-box admin-mode">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Portal & GitHub Settings</h3>
+      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Portal Settings</h3>
       <button class="btn-secondary" id="btnCloseAdmin" style="padding:4px 8px;">✕</button>
     </div>
 
     <div style="display:flex; flex-direction:column; gap:6px;">
       <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Client Passcode (Leave blank for public access):</label>
       <input type="text" id="adminClientPassSetting" placeholder="e.g. client2026 (blank = public access)">
+      <span style="font-size:0.75rem; color:var(--muted);">When empty, reviewers access the portal directly without passwords.</span>
     </div>
 
-    <!-- GitHub Auto-Sync Settings -->
-    <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px; border-top:1px solid var(--border); padding-top:10px;">
-      <label style="font-size:0.85rem; font-weight:700; color:var(--success);">Client GitHub Auto-Save Destination:</label>
-      <div style="display:grid; grid-template-columns: 2fr 1fr; gap:8px;">
-        <input type="text" id="adminGhRepo" placeholder="owner/repository (e.g. username/audio-qc)">
-        <input type="text" id="adminGhBranch" placeholder="branch (e.g. main)" value="main">
-      </div>
-      <input type="text" id="adminGhFilePath" placeholder="CSV target path (e.g. Master_Project_Retake_Sheet.csv)" value="Master_Project_Retake_Sheet.csv">
-      <input type="password" id="adminGhToken" placeholder="GitHub Personal Access Token (repo contents write access)">
-      <span style="font-size:0.75rem; color:var(--muted);">When configured, all client retake additions directly push commits to this CSV file on GitHub.</span>
-    </div>
-
-    <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px; border-top:1px solid var(--border); padding-top:10px;">
+    <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
       <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Dropbox Tracks & Transcripts:</label>
-      <p style="margin:0;">Paste Dropbox links directly (one per line):</p>
+      <p style="margin:0;">Paste Dropbox links directly (one per line). Titles and matching VTT filenames are detected automatically:</p>
       <textarea id="adminTrackInput" spellcheck="false" placeholder="https://www.dropbox.com/scl/fi/hd5rtkbnsv8zqpghybm1v/Chapter-1.mp3?rlkey=pej9w8uhcq3sn1blke08omsyh&st=rcw47ge5&dl=0&#10;https://www.dropbox.com/scl/fi/lf2grph87sg6nzu4gmxxc/Chapter-2.mp3?rlkey=2b7vpuh779mvckns2gxzz23dy&st=pb7p805x&dl=0"></textarea>
     </div>
 
-    <div style="display:flex; gap:10px; justify-content: flex-end; margin-top:8px;">
-      <button class="btn-secondary" id="btnResetDefault">Reset to Defaults</button>
-      <button class="btn-primary" id="btnSaveAdminSettings">Save & Apply</button>
+    <div style="display:flex; gap:10px; justify-content: space-between; align-items:center; margin-top:8px;">
+      <button class="btn-secondary" id="btnForgetAdminAuth" style="color:#fda4af;">Forget Admin Login</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-secondary" id="btnResetDefault">Reset to Defaults</button>
+        <button class="btn-primary" id="btnSaveAdminSettings">Save & Apply</button>
+      </div>
     </div>
   </div>
 </div>
@@ -780,7 +815,8 @@
     <div class="filter-bar">
       <span style="font-weight: 700; color: var(--muted); margin-right: 2px;">VIEW:</span>
       <button class="filter-tab active" data-filter="all">All Cues (<span id="countAll">0</span>)</button>
-      <button class="filter-tab" data-filter="flagged">Flagged Only (<span id="countFlagged">0</span>)</button>
+      <button class="filter-tab" data-filter="flagged">Flagged (<span id="countFlagged">0</span>)</button>
+      <button class="filter-tab revision-tab" data-filter="revisions">Revisions (<span id="countRevisions">0</span>)</button>
       <select id="errorFilter" style="margin-right: 6px;">
         <option value="">All Categories</option>
         <option value="Mispronunciation">Mispronunciation</option>
@@ -795,19 +831,23 @@
       <span class="flag-counter" id="flagCounter">0 Errors Flagged</span>
     </div>
 
-    <!-- Action Bar -->
+    <!-- Action Bar (Master CSV & Retakes) -->
     <div class="compact-action-bar" id="compactActionBar">
-      <span class="bar-section-label">AUTO-SAVE:</span>
-      <span id="diskSaveStatus" title="Auto-save status">Ready</span>
+      <span class="bar-section-label">MASTER RETAKE CSV:</span>
+      <button class="btn-xs" id="btnUploadMasterCsv" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Upload a master retake CSV sheet to import revisions">
+        ⬆ Upload Master CSV
+      </button>
+      <button class="btn-xs" id="btnDownloadMasterCsv" style="color: #d8b4fe; border-color: rgba(168, 85, 247, 0.4);" title="Download the full Master Retake CSV sheet including all revisions">
+        ⬇ Download Master CSV
+      </button>
 
       <span class="bar-divider"></span>
 
       <span class="bar-section-label">EXPORTS:</span>
       <button class="btn-xs" id="btnExportTxt" style="color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">Notes (.txt)</button>
-      <button class="btn-xs" id="btnExportCsv" title="Export flagged errors from current chapter">Retake CSV (Current)</button>
-      <button class="btn-xs" id="btnExportAllCsv" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Export flagged errors across all project chapters">Retake CSV (All Files)</button>
+      <button class="btn-xs" id="btnExportCsv" title="Export flagged errors from current chapter">Chapter CSV</button>
 
-      <span class="bar-divider"></span>
+      <span id="diskSaveStatus" title="Status of storage"></span>
 
       <button class="btn-xs btn-xs-danger" id="btnClearStorage" style="margin-left: auto;" title="Clear local cache for this chapter and reload">
         Reset Chapter
@@ -824,12 +864,16 @@
         <span id="zoomWindowVal" style="font-family: monospace; color: var(--text); font-weight: 700;">10s</span>
         <button class="btn-mini" id="btnZoomReset">Reset 10s</button>
         
-        <span style="border-left: 1px solid var(--border); height: 14px; margin: 0 3px;"></span>
+        <span style="border-left: 1px solid var(--border); height: 14px; margin: 0 4px;"></span>
         
         <button class="btn-nudge" id="btnPlayheadBackFast" title="Step back 0.5s">⏪ -0.5s</button>
-        <button class="btn-nudge" id="btnPlayheadBackSlow" title="Step back 0.1s (100ms)">◀ -0.1s</button>
-        <button class="btn-nudge" id="btnPlayheadFwdSlow" title="Step forward 0.1s (100ms)">+0.1s ▶</button>
+        <button class="btn-nudge" id="btnPlayheadBackSlow" title="Step back 0.1s">◀ -0.1s</button>
+        <button class="btn-nudge" id="btnPlayheadFwdSlow" title="Step forward 0.1s">+0.1s ▶</button>
         <button class="btn-nudge" id="btnPlayheadFwdFast" title="Step forward 0.5s">+0.5s ⏩</button>
+
+        <span style="margin-left: auto; font-size: 0.7rem; color: var(--muted);">
+          Audition Head [Q] | Audition Tail [E] | Flag [F]
+        </span>
       </div>
 
       <div class="waveform-wrap" id="waveWrap">
@@ -837,7 +881,7 @@
         <div class="wave-badge" id="waveModeBadge">Window ±5.0s</div>
       </div>
 
-      <!-- Live Subtitle Strip -->
+      <!-- Live Subtitle Strip (Cleaned) -->
       <div class="live-subtitle-strip" id="liveSubtitleStrip">
         <div class="live-sub-text placeholder" id="liveSubText">Select a chapter to begin</div>
       </div>
@@ -852,7 +896,7 @@
       </div>
     </div>
 
-    <!-- Playback Controls -->
+    <!-- Playback Controls (Cleaned) -->
     <div class="playback-controls">
       <button type="button" class="btn-ctrl" id="btnRewind5" title="Jump back 5s [J]">↺ -5s [J]</button>
       <button type="button" class="btn-ctrl" id="btnForward5" title="Jump forward 5s [L]">+5s ↻ [L]</button>
@@ -864,14 +908,12 @@
         <span class="speed-badge" id="speedDisplay">1.00x</span>
       </div>
 
-      <button class="btn-mini" id="btnAutoPurgeGhosts" style="color: #fca5a5; border-color: rgba(244, 63, 94, 0.4); margin-left: 6px;" title="Scan for and automatically remove identical duplicate cues or squashed ghost blocks">
-        🧹 Clean Ghost Cues
-      </button>
-
       <div class="shortcut-legend">
         <span><kbd>Space</kbd> Play</span>
-        <span><kbd>R</kbd> Loop</span>
+        <span><kbd>Q</kbd> Head</span>
+        <span><kbd>E</kbd> Tail</span>
         <span><kbd>F</kbd> Flag</span>
+        <span><kbd>R</kbd> Loop</span>
       </div>
     </div>
   </div>
@@ -883,9 +925,9 @@
 
 <script>
   // ==========================================================
-  // 1. PATH SCOPING & AUTHENTICATION
+  // 1. AUTHENTICATION & REMEMBER ME (PASSWORD CHANGED TO "1")
   // ==========================================================
-  const MASTER_ADMIN_PASSWORD = "admin777";
+  const MASTER_ADMIN_PASSWORD = "1";
   const PATH_KEY = window.location.pathname.replace(/index\.html$/i, '');
   function getScopedKey(name) {
     return `${name}_${PATH_KEY}`;
@@ -895,8 +937,6 @@
     return localStorage.getItem(getScopedKey('qc_client_password')) || '';
   }
 
-  let isAdminSession = sessionStorage.getItem(getScopedKey('qc_admin_active')) === 'true';
-
   const authOverlay = document.getElementById('authOverlay');
   const mainContainer = document.getElementById('mainContainer');
   const passInput = document.getElementById('passInput');
@@ -905,7 +945,7 @@
 
   function checkClientAccess() {
     const requiredPass = getClientPassword();
-    if (!requiredPass || sessionStorage.getItem(getScopedKey('qc_authorized')) === 'true' || isAdminSession) {
+    if (!requiredPass || sessionStorage.getItem(getScopedKey('qc_authorized')) === 'true') {
       authOverlay.style.display = 'none';
       mainContainer.style.display = 'flex';
       initApp();
@@ -934,11 +974,10 @@
     if (e.key === 'Enter') verifyClientPasscode();
   });
 
-  // ==========================================================
-  // 2. ADMIN MODAL & GITHUB CONFIGURATION
-  // ==========================================================
+  // Admin Verification & Remember Me Logic
   const adminAuthModal = document.getElementById('adminAuthModal');
   const adminPassInput = document.getElementById('adminPassInput');
+  const adminRememberMe = document.getElementById('adminRememberMe');
   const btnAdminVerify = document.getElementById('btnAdminVerify');
   const adminAuthError = document.getElementById('adminAuthError');
   const btnCancelAdminAuth = document.getElementById('btnCancelAdminAuth');
@@ -947,15 +986,136 @@
   const btnCloseAdmin = document.getElementById('btnCloseAdmin');
   const adminClientPassSetting = document.getElementById('adminClientPassSetting');
   const adminTrackInput = document.getElementById('adminTrackInput');
-  const adminGhRepo = document.getElementById('adminGhRepo');
-  const adminGhBranch = document.getElementById('adminGhBranch');
-  const adminGhFilePath = document.getElementById('adminGhFilePath');
-  const adminGhToken = document.getElementById('adminGhToken');
-
   const btnSaveAdminSettings = document.getElementById('btnSaveAdminSettings');
   const btnResetDefault = document.getElementById('btnResetDefault');
+  const btnForgetAdminAuth = document.getElementById('btnForgetAdminAuth');
   const appTitle = document.getElementById('appTitle');
   const btnAdminTrigger = document.getElementById('btnAdminTrigger');
+
+  function isAdminRemembered() {
+    return localStorage.getItem(getScopedKey('qc_admin_remembered')) === 'true';
+  }
+
+  function openAdminChallenge() {
+    if (isAdminRemembered()) {
+      openAdminPanel();
+      return;
+    }
+    adminAuthError.style.display = 'none';
+    adminPassInput.value = '';
+    adminRememberMe.checked = false;
+    adminAuthModal.style.display = 'flex';
+    adminPassInput.focus();
+  }
+
+  function verifyAdminLogin() {
+    if (adminPassInput.value.trim() === MASTER_ADMIN_PASSWORD) {
+      if (adminRememberMe.checked) {
+        localStorage.setItem(getScopedKey('qc_admin_remembered'), 'true');
+      }
+      adminAuthModal.style.display = 'none';
+      openAdminPanel();
+    } else {
+      adminAuthError.style.display = 'block';
+      adminPassInput.value = '';
+      adminPassInput.focus();
+    }
+  }
+
+  btnAdminVerify.addEventListener('click', verifyAdminLogin);
+  adminPassInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') verifyAdminLogin();
+  });
+  btnCancelAdminAuth.addEventListener('click', () => { adminAuthModal.style.display = 'none'; });
+  btnAdminTrigger.addEventListener('click', (e) => { e.preventDefault(); openAdminChallenge(); });
+
+  btnForgetAdminAuth.addEventListener('click', () => {
+    localStorage.removeItem(getScopedKey('qc_admin_remembered'));
+    alert("Admin login credentials will be requested next time.");
+  });
+
+  let titleClicks = 0;
+  let clickTimer = null;
+  appTitle.addEventListener('click', (e) => {
+    e.preventDefault();
+    titleClicks++;
+    clearTimeout(clickTimer);
+    if (titleClicks >= 2) {
+      titleClicks = 0;
+      openAdminChallenge();
+    } else {
+      clickTimer = setTimeout(() => { titleClicks = 0; }, 400);
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+      e.preventDefault();
+      openAdminChallenge();
+    }
+  });
+
+  if (window.location.search.includes('admin')) {
+    setTimeout(openAdminChallenge, 150);
+  }
+
+  function openAdminPanel() {
+    adminClientPassSetting.value = getClientPassword();
+    adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
+    adminModal.style.display = 'flex';
+  }
+
+  btnCloseAdmin.addEventListener('click', () => { adminModal.style.display = 'none'; });
+
+  btnSaveAdminSettings.addEventListener('click', () => {
+    const newClientPass = adminClientPassSetting.value.trim();
+    if (newClientPass) {
+      localStorage.setItem(getScopedKey('qc_client_password'), newClientPass);
+    } else {
+      localStorage.removeItem(getScopedKey('qc_client_password'));
+    }
+
+    const rawLines = adminTrackInput.value.trim().split('\n').map(l => l.trim()).filter(Boolean);
+    const newTracks = [];
+
+    rawLines.forEach((line, index) => {
+      if (line.includes('|')) {
+        const parts = line.split('|').map(s => s.trim());
+        const title = parts[0] || `Track ${index + 1}`;
+        const audio = parts[1];
+        const vtt = parts[2] || `${title}.vtt`;
+        newTracks.push({ title, audio, vtt });
+      } else {
+        const audio = line;
+        const filename = extractFilenameFromUrl(audio);
+        const baseName = filename.replace(/\.(mp3|wav|m4a|aac|ogg|flac)$/i, '');
+        const title = baseName ? baseName.replace(/[-_]/g, ' ') : `Track ${index + 1}`;
+        const vtt = `${baseName || title}.vtt`;
+        newTracks.push({ title, audio, vtt });
+      }
+    });
+
+    if (newTracks.length > 0) {
+      TRACKS = newTracks;
+      localStorage.setItem(getScopedKey('qc_custom_tracks'), JSON.stringify(TRACKS));
+    }
+
+    adminModal.style.display = 'none';
+    alert(`Saved ${newTracks.length} tracks successfully!`);
+    renderTrackGrid();
+    loadTrack(0);
+  });
+
+  btnResetDefault.addEventListener('click', () => {
+    if (confirm('Reset to default chapters and clear passcode?')) {
+      localStorage.removeItem(getScopedKey('qc_custom_tracks'));
+      localStorage.removeItem(getScopedKey('qc_client_password'));
+      TRACKS = DEFAULT_TRACKS;
+      adminModal.style.display = 'none';
+      renderTrackGrid();
+      loadTrack(0);
+    }
+  });
 
   const DEFAULT_TRACKS = [
     { 
@@ -1015,119 +1175,8 @@
     }
   }
 
-  function openAdminChallenge() {
-    adminAuthError.style.display = 'none';
-    adminPassInput.value = '';
-    adminAuthModal.style.display = 'flex';
-    adminPassInput.focus();
-  }
-
-  function verifyAdminLogin() {
-    if (adminPassInput.value.trim() === MASTER_ADMIN_PASSWORD) {
-      adminAuthModal.style.display = 'none';
-      isAdminSession = true;
-      sessionStorage.setItem(getScopedKey('qc_admin_active'), 'true');
-      openAdminPanel();
-    } else {
-      adminAuthError.style.display = 'block';
-      adminPassInput.value = '';
-      adminPassInput.focus();
-    }
-  }
-
-  btnAdminVerify.addEventListener('click', verifyAdminLogin);
-  adminPassInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') verifyAdminLogin();
-  });
-  btnCancelAdminAuth.addEventListener('click', () => { adminAuthModal.style.display = 'none'; });
-  btnAdminTrigger.addEventListener('click', (e) => { e.preventDefault(); openAdminChallenge(); });
-
-  let titleClicks = 0;
-  let clickTimer = null;
-  appTitle.addEventListener('click', (e) => {
-    e.preventDefault();
-    titleClicks++;
-    clearTimeout(clickTimer);
-    if (titleClicks >= 2) {
-      titleClicks = 0;
-      openAdminChallenge();
-    } else {
-      clickTimer = setTimeout(() => { titleClicks = 0; }, 400);
-    }
-  });
-
-  function openAdminPanel() {
-    adminClientPassSetting.value = getClientPassword();
-    adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
-    adminGhRepo.value = localStorage.getItem(getScopedKey('qc_gh_repo')) || '';
-    adminGhBranch.value = localStorage.getItem(getScopedKey('qc_gh_branch')) || 'main';
-    adminGhFilePath.value = localStorage.getItem(getScopedKey('qc_gh_path')) || 'Master_Project_Retake_Sheet.csv';
-    adminGhToken.value = localStorage.getItem(getScopedKey('qc_gh_token')) || '';
-    adminModal.style.display = 'flex';
-  }
-
-  btnCloseAdmin.addEventListener('click', () => { adminModal.style.display = 'none'; });
-
-  btnSaveAdminSettings.addEventListener('click', () => {
-    const newClientPass = adminClientPassSetting.value.trim();
-    if (newClientPass) {
-      localStorage.setItem(getScopedKey('qc_client_password'), newClientPass);
-    } else {
-      localStorage.removeItem(getScopedKey('qc_client_password'));
-    }
-
-    localStorage.setItem(getScopedKey('qc_gh_repo'), adminGhRepo.value.trim());
-    localStorage.setItem(getScopedKey('qc_gh_branch'), adminGhBranch.value.trim() || 'main');
-    localStorage.setItem(getScopedKey('qc_gh_path'), adminGhFilePath.value.trim() || 'Master_Project_Retake_Sheet.csv');
-    if (adminGhToken.value.trim()) {
-      localStorage.setItem(getScopedKey('qc_gh_token'), adminGhToken.value.trim());
-    }
-
-    const rawLines = adminTrackInput.value.trim().split('\n').map(l => l.trim()).filter(Boolean);
-    const newTracks = [];
-
-    rawLines.forEach((line, index) => {
-      if (line.includes('|')) {
-        const parts = line.split('|').map(s => s.trim());
-        const title = parts[0] || `Track ${index + 1}`;
-        const audio = parts[1];
-        const vtt = parts[2] || `${title}.vtt`;
-        newTracks.push({ title, audio, vtt });
-      } else {
-        const audio = line;
-        const filename = extractFilenameFromUrl(audio);
-        const baseName = filename.replace(/\.(mp3|wav|m4a|aac|ogg|flac)$/i, '');
-        const title = baseName ? baseName.replace(/[-_]/g, ' ') : `Track ${index + 1}`;
-        const vtt = `${baseName || title}.vtt`;
-        newTracks.push({ title, audio, vtt });
-      }
-    });
-
-    if (newTracks.length > 0) {
-      TRACKS = newTracks;
-      localStorage.setItem(getScopedKey('qc_custom_tracks'), JSON.stringify(TRACKS));
-    }
-
-    adminModal.style.display = 'none';
-    renderTrackGrid();
-    loadTrack(0);
-  });
-
-  btnResetDefault.addEventListener('click', () => {
-    if (confirm('Reset to default chapters and clear settings?')) {
-      localStorage.removeItem(getScopedKey('qc_custom_tracks'));
-      localStorage.removeItem(getScopedKey('qc_client_password'));
-      localStorage.removeItem(getScopedKey('qc_gh_repo'));
-      localStorage.removeItem(getScopedKey('qc_gh_token'));
-      TRACKS = DEFAULT_TRACKS;
-      adminModal.style.display = 'none';
-      renderTrackGrid();
-      loadTrack(0);
-    }
-  });
-
   // ==========================================================
-  // 3. CORE QC & WAVEFORM ENGINE
+  // 2. CORE QC & WAVEFORM ENGINE
   // ==========================================================
   const audioPlayer = document.getElementById('audioPlayer');
   const waveCanvas = document.getElementById('waveCanvas');
@@ -1141,7 +1190,6 @@
   const btnZoomIn = document.getElementById('btnZoomIn');
   const btnZoomOut = document.getElementById('btnZoomOut');
   const btnZoomReset = document.getElementById('btnZoomReset');
-  const btnAutoPurgeGhosts = document.getElementById('btnAutoPurgeGhosts');
 
   const btnPlayheadBackFast = document.getElementById('btnPlayheadBackFast');
   const btnPlayheadBackSlow = document.getElementById('btnPlayheadBackSlow');
@@ -1155,6 +1203,7 @@
   const flagCounter = document.getElementById('flagCounter');
   const countAll = document.getElementById('countAll');
   const countFlagged = document.getElementById('countFlagged');
+  const countRevisions = document.getElementById('countRevisions');
 
   const btnRewind5 = document.getElementById('btnRewind5');
   const btnForward5 = document.getElementById('btnForward5');
@@ -1163,19 +1212,25 @@
   const speedDisplay = document.getElementById('speedDisplay');
   const errorFilter = document.getElementById('errorFilter');
   const btnClearStorage = document.getElementById('btnClearStorage');
+
+  const masterCsvFileInput = document.getElementById('masterCsvFileInput');
+  const btnUploadMasterCsv = document.getElementById('btnUploadMasterCsv');
+  const btnDownloadMasterCsv = document.getElementById('btnDownloadMasterCsv');
   const diskSaveStatus = document.getElementById('diskSaveStatus');
 
   let currentTrackTitle = "Chapter 1";
+  let vttFileName = "Chapter 1.vtt";
   let activeIndex = -1;
   let segments = [];
   let currentActiveId = null;
-  let activeFilter = 'all';
+  let activeFilter = 'all'; // 'all' | 'flagged' | 'revisions'
   let loopingSegmentIndex = null;
 
   let audioCtx = null;
   let audioBuffer = null;
   let channelData = null;
   let sampleRate = 44100;
+  let totalAudioSeconds = 0;
   let animFrameId = null;
 
   let currentWindowSpan = 10.0;
@@ -1184,7 +1239,6 @@
   let isScrubbingWaveform = false;
   let scrubStartX = 0;
   let scrubStartTime = 0;
-  let autoSaveTimeout = null;
 
   function getStorageKeyForTrack(trackTitle) {
     const safeTitle = (trackTitle || 'default').replace(/\s+/g, '_');
@@ -1229,6 +1283,7 @@
     activeIndex = idx;
     const track = TRACKS[idx];
     currentTrackTitle = track.title;
+    vttFileName = track.vtt;
 
     document.querySelectorAll('.track-pill').forEach((b, i) => b.classList.toggle('active', i === idx));
     statusDiv.textContent = `Loading track "${track.title}"...`;
@@ -1242,7 +1297,7 @@
       const arrayBuf = await res.arrayBuffer();
       processAudioBuffer(arrayBuf);
     } catch (e) {
-      console.warn("Waveform decode CORS note:", e);
+      console.warn("Waveform decode over CORS failed, playback remains operational:", e);
       channelData = null;
       drawWaveform();
     }
@@ -1274,8 +1329,8 @@
     } else {
       segments = [];
       renderTranscript();
-      statusDiv.textContent = `Playing "${track.title}", but VTT not found locally.`;
-      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not locate "${track.vtt}". Verify filename in settings.</p>`;
+      statusDiv.textContent = `Playing "${track.title}", but VTT transcript not found locally.`;
+      transcriptDiv.innerHTML = `<p style="color:var(--danger); text-align:center;">Could not locate "${track.vtt}". Verify filename in admin configuration.</p>`;
     }
   }
 
@@ -1285,6 +1340,7 @@
       audioBuffer = await audioCtx.decodeAudioData(arrayBuf);
       channelData = audioBuffer.getChannelData(0);
       sampleRate = audioBuffer.sampleRate;
+      totalAudioSeconds = audioBuffer.duration;
 
       let overallMax = 0.05;
       const step = Math.max(1, Math.floor(channelData.length / 50000));
@@ -1297,6 +1353,62 @@
     } catch(e) {
       console.error(e);
     }
+  }
+
+  function auditionInHead() {
+    const { cue } = getActiveOrClosestCue();
+    if (!cue) return;
+    playAudioSnippet(Math.max(0, cue.start - 0.3), 0.7);
+  }
+
+  function auditionOutTail() {
+    const { cue } = getActiveOrClosestCue();
+    if (!cue) return;
+    playAudioSnippet(Math.max(0, cue.end - 0.4), 0.7);
+  }
+
+  let activeAuditionSource = null;
+  function playAudioSnippet(startOffset, duration) {
+    if (!audioCtx || !audioBuffer) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    try {
+      if (activeAuditionSource) {
+        activeAuditionSource.stop();
+        activeAuditionSource.disconnect();
+      }
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioBuffer;
+      src.connect(audioCtx.destination);
+      src.start(0, startOffset, duration);
+      activeAuditionSource = src;
+    } catch (e) {}
+  }
+
+  let activeScrubSource = null;
+  function playAudioScrubSnippet(timeSec) {
+    if (!audioCtx || !audioBuffer) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    try {
+      if (activeScrubSource) {
+        activeScrubSource.stop();
+        activeScrubSource.disconnect();
+        activeScrubSource = null;
+      }
+      const snippetDur = 0.07;
+      const startOffset = Math.max(0, Math.min(totalAudioSeconds - snippetDur, timeSec));
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioBuffer;
+
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.85, audioCtx.currentTime + 0.01);
+      gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + snippetDur);
+
+      src.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      src.start(0, startOffset, snippetDur);
+      activeScrubSource = src;
+    } catch (e) {}
   }
 
   function getActiveOrClosestCue() {
@@ -1353,20 +1465,40 @@
       ctx.fillStyle = '#334155';
       ctx.font = '12px system-ui';
       ctx.textAlign = 'center';
-      ctx.fillText('Waveform preview loading / CORS restricted.', width / 2, height / 2);
+      ctx.fillText('Waveform preview unavailable over CORS.', width / 2, height / 2);
       ctx.textAlign = 'left';
       return;
     }
 
     const { cue: activeCue } = getActiveOrClosestCue();
 
+    segments.forEach((s) => {
+      if (s.end < startSec || s.start > endSec) return;
+      if (activeCue && activeCue.id === s.id) return;
+
+      const cStartX = ((s.start - startSec) / currentWindowSpan) * width;
+      if (cStartX >= 0 && cStartX <= width) {
+        ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cStartX, 0);
+        ctx.lineTo(cStartX, height);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    });
+
     if (activeCue) {
       const cueStartX = ((activeCue.start - startSec) / currentWindowSpan) * width;
       const cueEndX = ((activeCue.end - startSec) / currentWindowSpan) * width;
+
       const boxLeft = Math.max(0, cueStartX);
       const boxRight = Math.min(width, cueEndX);
       if (boxRight > boxLeft) {
-        ctx.fillStyle = (loopingSegmentIndex !== null) ? 'rgba(16, 185, 129, 0.16)' : 'rgba(56, 189, 248, 0.12)';
+        ctx.fillStyle = (loopingSegmentIndex !== null) 
+          ? 'rgba(16, 185, 129, 0.16)' 
+          : (activeCue.isRevision ? 'rgba(168, 85, 247, 0.18)' : 'rgba(56, 189, 248, 0.13)');
         ctx.fillRect(boxLeft, 0, boxRight - boxLeft, height);
       }
     }
@@ -1449,6 +1581,7 @@
     isScrubbingWaveform = true;
     scrubStartX = e.clientX;
     scrubStartTime = audioPlayer.currentTime || 0;
+    if (audioPlayer.paused) playAudioScrubSnippet(scrubStartTime);
   });
 
   window.addEventListener('mousemove', (e) => {
@@ -1460,6 +1593,8 @@
     const target = Math.max(0, Math.min(audioPlayer.duration || 999999, scrubStartTime + deltaSeconds));
     
     audioPlayer.currentTime = target;
+    if (audioPlayer.paused) playAudioScrubSnippet(target);
+
     drawWaveform();
     updateLiveSubtitleStrip();
   });
@@ -1487,6 +1622,7 @@
 
   function nudgePlayhead(delta) {
     audioPlayer.currentTime = Math.max(0, Math.min(audioPlayer.duration || 999999, audioPlayer.currentTime + delta));
+    if (audioPlayer.paused) playAudioScrubSnippet(audioPlayer.currentTime);
     drawWaveform();
     updateLiveSubtitleStrip();
   }
@@ -1548,10 +1684,6 @@
     }
   }
 
-  function cleanToken(w) {
-    return (w || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  }
-
   function recalculateMetrics(seg) {
     const duration = Math.max(0.05, seg.end - seg.start);
     const words = seg.text.trim().split(/\s+/).filter(Boolean).length;
@@ -1566,9 +1698,12 @@
       start,
       end,
       text: clean,
+      originalText: clean,
       wpm: 0,
       cps: '0.0',
       flagged: false,
+      isRevision: false,
+      revisionNote: '',
       errorType: 'Mispronunciation',
       note: ''
     };
@@ -1577,11 +1712,13 @@
   }
 
   function parseSeconds(timeStr) {
-    const parts = timeStr.split(':');
+    const parts = (timeStr || '').trim().split(':');
     if (parts.length === 3) {
       return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+    } else if (parts.length === 2) {
+      return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
     }
-    return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+    return parseFloat(timeStr) || 0;
   }
 
   function formatTime(sec) {
@@ -1607,60 +1744,6 @@
     audioPlayer.play();
   };
 
-  window.deleteSegment = function(idx) {
-    const seg = segments[idx];
-    if (!seg || !confirm(`Delete Cue #${idx + 1}?`)) return;
-
-    if (loopingSegmentIndex === idx) clearLoop();
-    else if (loopingSegmentIndex !== null && loopingSegmentIndex > idx) loopingSegmentIndex--;
-
-    segments.splice(idx, 1);
-    reindexSegments();
-
-    persistSessionLocal();
-    renderTranscript();
-    updateLiveSubtitleStrip();
-    drawWaveform();
-  };
-
-  btnAutoPurgeGhosts.addEventListener('click', () => {
-    if (segments.length < 2) return;
-    let removedCount = 0;
-    for (let i = segments.length - 1; i > 0; i--) {
-      const curr = segments[i];
-      const prev = segments[i - 1];
-
-      const cleanCurr = cleanToken(curr.text);
-      const cleanPrev = cleanToken(prev.text);
-
-      const isIdentical = (cleanCurr.length > 0 && cleanCurr === cleanPrev);
-      const isSquashed = (curr.end - curr.start <= 0.6) || (curr.wpm > 350);
-
-      if (isIdentical || (isSquashed && cleanCurr.includes(cleanPrev))) {
-        prev.end = Math.max(prev.end, curr.end);
-        recalculateMetrics(prev);
-        segments.splice(i, 1);
-        removedCount++;
-      }
-    }
-
-    if (removedCount > 0) {
-      reindexSegments();
-      clearLoop();
-      persistSessionLocal();
-      renderTranscript();
-      updateLiveSubtitleStrip();
-      drawWaveform();
-      alert(`Purged ${removedCount} ghost duplicate cues.`);
-    } else {
-      alert("No adjacent ghost duplicates detected.");
-    }
-  });
-
-  function reindexSegments() {
-    segments.forEach((s, i) => s.id = i);
-  }
-
   function renderTranscript() {
     transcriptDiv.innerHTML = '';
     currentActiveId = null;
@@ -1669,11 +1752,12 @@
 
     segments.forEach((seg, idx) => {
       if (activeFilter === 'flagged' && !seg.flagged) return;
+      if (activeFilter === 'revisions' && !seg.isRevision) return;
       if (selectedError && seg.errorType !== selectedError) return;
 
       const isThisLooping = (loopingSegmentIndex === idx);
       const card = document.createElement('div');
-      card.className = `segment ${seg.flagged ? 'flagged' : ''} ${isThisLooping ? 'looping-cue' : ''}`;
+      card.className = `segment ${seg.flagged ? 'flagged' : ''} ${seg.isRevision ? 'is-revision' : ''} ${isThisLooping ? 'looping-cue' : ''}`;
       card.id = `seg-${idx}`;
       card.dataset.start = seg.start;
       card.dataset.end = seg.end;
@@ -1689,7 +1773,7 @@
             [${formatTime(seg.start)} - ${formatTime(seg.end)}]
           </span>
           <span class="pace-pill ${paceClass}">${seg.wpm} WPM | ${seg.cps} CPS</span>
-          <button class="btn-danger-sm" onclick="event.stopPropagation(); window.deleteSegment(${idx})" title="Delete cue">🗑️</button>
+          ${seg.isRevision ? `<span class="badge-revision">Revision</span>` : ''}
 
           <button class="btn-ctrl" style="padding: 2px 7px; font-size: 0.72rem; margin-left: auto;" onclick="event.stopPropagation(); window.playSegment(${idx})">▶ Play</button>
           <button class="btn-ctrl ${isThisLooping ? 'active-loop' : ''}" style="padding: 2px 7px; font-size: 0.72rem;" onclick="event.stopPropagation(); window.toggleLoopSegment(${idx})">
@@ -1697,16 +1781,21 @@
           </button>
         </div>
 
-        <div class="seg-text-display">${seg.text}</div>
+        <textarea class="seg-text-input" data-idx="${idx}">${seg.text}</textarea>
 
         <div class="seg-footer">
           <button class="flag-btn ${seg.flagged ? 'is-flagged' : ''}" data-idx="${idx}">
             ⚑ ${seg.flagged ? 'Flagged' : 'Flag Issue'}
           </button>
+          
+          <button class="revision-btn ${seg.isRevision ? 'is-revision' : ''}" data-idx="${idx}" title="Mark/Unmark as Revision from Retake CSV">
+            ✎ ${seg.isRevision ? 'Revision Marked' : 'Mark Revision'}
+          </button>
+
           <span style="font-size: 0.74rem; color: var(--muted); margin-left: 4px;">${seg.flagged ? seg.errorType : ''}</span>
         </div>
 
-        <div class="comment-drawer ${seg.flagged ? 'open' : ''}" id="drawer-${idx}">
+        <div class="comment-drawer ${seg.flagged || seg.isRevision ? 'open' : ''}" id="drawer-${idx}">
           <div class="row">
             <label style="font-size: 0.76rem; color: var(--muted);">Issue Type:</label>
             <select class="error-type" data-idx="${idx}">
@@ -1729,13 +1818,30 @@
             <button class="btn-quick-pill" onclick="window.appendQuickNote(${idx}, 'Low energy / Flat')">+ Low Energy</button>
           </div>
 
-          <textarea placeholder="Describe error or notes for retake..." data-idx="${idx}">${seg.note}</textarea>
+          <textarea placeholder="Describe error or retake notes..." data-idx="${idx}">${seg.note}</textarea>
         </div>
       `;
+
+      card.querySelector('.seg-text-input').addEventListener('input', (e) => {
+        seg.text = e.target.value;
+        recalculateMetrics(seg);
+        updateLiveSubtitleStrip();
+        persistSessionLocal();
+      });
 
       card.querySelector('.flag-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         seg.flagged = !seg.flagged;
+        persistSessionLocal();
+        renderTranscript();
+      });
+
+      card.querySelector('.revision-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        seg.isRevision = !seg.isRevision;
+        if (seg.isRevision && !seg.flagged) {
+          seg.flagged = true; // revisions are automatically flagged
+        }
         persistSessionLocal();
         renderTranscript();
       });
@@ -1812,6 +1918,7 @@
         loopBtn.innerHTML = isLoop ? '🔁 Looping' : '🔁 Loop';
       }
     });
+    updateLiveSubtitleStrip();
   }
 
   audioPlayer.addEventListener('timeupdate', () => {
@@ -1889,6 +1996,12 @@
     if (e.code === 'Space') {
       e.preventDefault();
       audioPlayer.paused ? audioPlayer.play() : audioPlayer.pause();
+    } else if (e.key === 'q' || e.key === 'Q') {
+      e.preventDefault();
+      auditionInHead();
+    } else if (e.key === 'e' || e.key === 'E') {
+      e.preventDefault();
+      auditionOutTail();
     } else if (e.key === 'j' || e.key === 'J') {
       audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 5);
     } else if (e.key === 'l' || e.key === 'L') {
@@ -1911,6 +2024,7 @@
     }
   });
 
+  // Filter tabs handling
   document.querySelectorAll('.filter-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
@@ -1925,35 +2039,36 @@
   function updateFilterCounts() {
     countAll.textContent = segments.length;
     const flagged = segments.filter(s => s.flagged).length;
+    const revisions = segments.filter(s => s.isRevision).length;
     countFlagged.textContent = flagged;
+    countRevisions.textContent = revisions;
     flagCounter.textContent = `${flagged} ${flagged === 1 ? 'Error' : 'Errors'} Flagged`;
   }
 
+  // ==========================================================
+  // 3. MASTER RETAKE CSV IMPORT & EXPORT (WITH REVISION COLUMN)
+  // ==========================================================
   function formatCsvCell(val) {
     return `"${(val || '').toString().replace(/"/g, '""')}"`;
   }
 
   function generateCsvFromSegments(items, fileName) {
-    const flagged = (items || []).filter(s => s && s.flagged === true);
-    return flagged.map((s, i) => [
+    // Only exports cues that have flags or revisions
+    const activeItems = (items || []).filter(s => s && (s.flagged === true || s.isRevision === true));
+    return activeItems.map((s, i) => [
       formatCsvCell(fileName),
       s.id !== undefined ? s.id + 1 : i + 1,
       formatCsvCell(formatTime(s.start)),
       formatCsvCell(formatTime(s.end)),
+      formatCsvCell(s.isRevision ? 'Yes' : 'No'),
       formatCsvCell(s.errorType || 'Mispronunciation'),
       formatCsvCell(s.text),
       formatCsvCell(s.note || '')
     ].join(','));
   }
 
-  function buildCsvString() {
-    const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
-    const rows = generateCsvFromSegments(segments, currentTrackTitle);
-    return [headers.join(','), ...rows].join('\n');
-  }
-
-  function buildAllTracksCsvString() {
-    const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
+  function buildMasterCsvString() {
+    const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Revision', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
     const allRows = [];
 
     TRACKS.forEach(track => {
@@ -1973,78 +2088,149 @@
     return [headers.join(','), ...allRows].join('\n');
   }
 
-  // ==========================================================
-  // 4. CONDITIONAL AUTO-SAVE: GITHUB (CLIENT) VS LOCAL (ADMIN)
-  // ==========================================================
-  async function syncCsvToGitHub(csvContent) {
-    const repo = localStorage.getItem(getScopedKey('qc_gh_repo'));
-    const branch = localStorage.getItem(getScopedKey('qc_gh_branch')) || 'main';
-    const filePath = localStorage.getItem(getScopedKey('qc_gh_path')) || 'Master_Project_Retake_Sheet.csv';
-    const token = localStorage.getItem(getScopedKey('qc_gh_token'));
+  function parseCsvRows(text) {
+    const lines = text.trim().split(/\r\n|\n|\r/);
+    if (!lines.length) return [];
+    
+    function parseLine(line) {
+      const result = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(cur.trim());
+          cur = '';
+        } else {
+          cur += char;
+        }
+      }
+      result.push(cur.trim());
+      return result;
+    }
 
-    if (!repo || !token) {
-      diskSaveStatus.style.color = 'var(--muted)';
-      diskSaveStatus.textContent = 'GitHub credentials not set';
+    const header = parseLine(lines[0]).map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const row = parseLine(lines[i]).map(c => c.replace(/^["']|["']$/g, '').trim());
+      const obj = {};
+      header.forEach((h, idx) => {
+        obj[h] = row[idx] || '';
+      });
+      data.push(obj);
+    }
+    return data;
+  }
+
+  function applyMasterRetakeCsv(csvText) {
+    const records = parseCsvRows(csvText);
+    if (!records.length) {
+      alert("No data found in uploaded CSV file.");
       return;
     }
 
-    try {
-      diskSaveStatus.style.color = 'var(--accent)';
-      diskSaveStatus.textContent = 'Syncing to GitHub...';
+    // Group updates by file
+    const byFile = {};
+    records.forEach(r => {
+      const fileKey = (r['file'] || currentTrackTitle).trim();
+      if (!byFile[fileKey]) byFile[fileKey] = [];
+      byFile[fileKey].push(r);
+    });
 
-      // 1. Get existing file SHA if it exists
-      const apiUrl = `https://api.github.com/repos/${repo}/contents/${filePath}?ref=${branch}`;
-      let sha = null;
+    let appliedCount = 0;
 
-      const getRes = await fetch(apiUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      });
+    // Apply to current in-memory segments
+    const currentRecords = byFile[currentTrackTitle] || [];
+    currentRecords.forEach(rec => {
+      const cueNum = parseInt(rec['cue #'], 10);
+      const isRev = (rec['revision'] || '').toLowerCase();
+      const hasRevision = isRev === 'yes' || isRev === 'true' || isRev === '1' || isRev.includes('rev');
 
-      if (getRes.ok) {
-        const fileData = await getRes.json();
-        sha = fileData.sha;
-      }
-
-      // 2. Put updated content to GitHub
-      const utf8Bytes = new TextEncoder().encode(csvContent);
-      let binaryStr = '';
-      for (let i = 0; i < utf8Bytes.length; i++) binaryStr += String.fromCharCode(utf8Bytes[i]);
-      const base64Content = btoa(binaryStr);
-
-      const putRes = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: `Client Review Sync - ${new Date().toISOString()}`,
-          content: base64Content,
-          branch: branch,
-          ...(sha ? { sha } : {})
-        })
-      });
-
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      if (putRes.ok) {
-        diskSaveStatus.style.color = 'var(--success)';
-        diskSaveStatus.textContent = `GitHub Synced ${timeStr}`;
+      let targetSeg = null;
+      if (!isNaN(cueNum) && segments[cueNum - 1]) {
+        targetSeg = segments[cueNum - 1];
       } else {
-        const errJson = await putRes.json();
-        console.error('GitHub API Error:', errJson);
-        diskSaveStatus.style.color = 'var(--danger)';
-        diskSaveStatus.textContent = 'GitHub sync failed';
+        // match by phrase
+        const phrase = (rec['script phrase'] || '').toLowerCase();
+        if (phrase) {
+          targetSeg = segments.find(s => s.text.toLowerCase().includes(phrase) || phrase.includes(s.text.toLowerCase()));
+        }
       }
-    } catch (err) {
-      console.error(err);
-      diskSaveStatus.style.color = 'var(--danger)';
-      diskSaveStatus.textContent = 'GitHub connection error';
-    }
+
+      if (targetSeg) {
+        targetSeg.isRevision = hasRevision;
+        if (hasRevision) targetSeg.flagged = true;
+        if (rec['issue type']) targetSeg.errorType = rec['issue type'];
+        if (rec['reviewer note']) targetSeg.note = rec['reviewer note'];
+        appliedCount++;
+      }
+    });
+
+    // Update stored tracks
+    TRACKS.forEach(track => {
+      if (track.title === currentTrackTitle) return;
+      const key = getStorageKeyForTrack(track.title);
+      const savedRaw = localStorage.getItem(key);
+      const fileRecs = byFile[track.title] || [];
+      if (!fileRecs.length || !savedRaw) return;
+
+      try {
+        const trackSegs = JSON.parse(savedRaw);
+        fileRecs.forEach(rec => {
+          const cueNum = parseInt(rec['cue #'], 10);
+          const isRev = (rec['revision'] || '').toLowerCase();
+          const hasRevision = isRev === 'yes' || isRev === 'true' || isRev === '1' || isRev.includes('rev');
+          let seg = null;
+          if (!isNaN(cueNum) && trackSegs[cueNum - 1]) {
+            seg = trackSegs[cueNum - 1];
+          }
+          if (seg) {
+            seg.isRevision = hasRevision;
+            if (hasRevision) seg.flagged = true;
+            if (rec['issue type']) seg.errorType = rec['issue type'];
+            if (rec['reviewer note']) seg.note = rec['reviewer note'];
+            appliedCount++;
+          }
+        });
+        localStorage.setItem(key, JSON.stringify(trackSegs));
+      } catch(e) {}
+    });
+
+    persistSessionLocal();
+    renderTranscript();
+    updateLiveSubtitleStrip();
+    drawWaveform();
+    alert(`Successfully synced Master Retake CSV! ${appliedCount} cue revision records loaded.`);
   }
+
+  btnUploadMasterCsv.addEventListener('click', () => {
+    masterCsvFileInput.value = '';
+    masterCsvFileInput.click();
+  });
+
+  masterCsvFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      applyMasterRetakeCsv(evt.target.result);
+    };
+    reader.readAsText(file);
+  });
+
+  btnDownloadMasterCsv.addEventListener('click', () => {
+    persistSessionLocal();
+    const csvContent = buildMasterCsvString();
+    downloadBlob(csvContent, `Master_Project_Retake_Sheet.csv`, 'text/csv;charset=utf-8');
+  });
 
   function persistSessionLocal() {
     const key = getStorageKey();
@@ -2053,27 +2239,15 @@
       id: s.id,
       start: s.start,
       end: s.end,
-      text: s.text || '',
+      text: s.text,
       flagged: s.flagged === true,
+      isRevision: s.isRevision === true,
       errorType: s.errorType || 'Mispronunciation',
       note: s.note || ''
     }));
     localStorage.setItem(key, JSON.stringify(payload));
-
-    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    if (isAdminSession) {
-      // ADMIN: Only cache locally, no GitHub sync
-      diskSaveStatus.style.color = 'var(--muted)';
-      diskSaveStatus.textContent = `Cached Locally ${timeStr}`;
-    } else {
-      // CLIENT: Sync directly to GitHub
-      clearTimeout(autoSaveTimeout);
-      autoSaveTimeout = setTimeout(() => {
-        const csvContent = buildAllTracksCsvString();
-        syncCsvToGitHub(csvContent);
-      }, 700);
-    }
+    diskSaveStatus.textContent = "Saved to browser";
+    setTimeout(() => { diskSaveStatus.textContent = ""; }, 2000);
   }
 
   function loadSession() {
@@ -2088,8 +2262,9 @@
         if (segments[index]) {
           if (item.start !== undefined) segments[index].start = item.start;
           if (item.end !== undefined) segments[index].end = item.end;
-          if (item.text) segments[index].text = item.text;
+          segments[index].text = item.text;
           segments[index].flagged = item.flagged === true;
+          segments[index].isRevision = item.isRevision === true;
           segments[index].errorType = item.errorType || 'Mispronunciation';
           segments[index].note = item.note || '';
           recalculateMetrics(segments[index]);
@@ -2100,7 +2275,7 @@
 
   btnClearStorage.addEventListener('click', () => {
     const key = getStorageKey();
-    if (key && confirm(`Reset saved notes and flags for "${currentTrackTitle}"?`)) {
+    if (key && confirm(`Reset saved notes and revisions for "${currentTrackTitle}"?`)) {
       localStorage.removeItem(key);
       loadTrack(activeIndex);
     }
@@ -2119,12 +2294,13 @@
   }
 
   document.getElementById('btnExportTxt').addEventListener('click', () => {
-    const flagged = segments.filter(s => s.flagged);
-    if (!flagged.length) return alert('No issues have been flagged for this track.');
+    const flagged = segments.filter(s => s.flagged || s.isRevision);
+    if (!flagged.length) return alert('No issues or revisions have been marked for this track.');
 
-    let txt = `AUDIO REVIEW NOTES - ${currentTrackTitle}\nGenerated: ${new Date().toLocaleString()}\n\n`;
+    let txt = `AUDIO REVIEW & RETAKE NOTES - ${currentTrackTitle}\nGenerated: ${new Date().toLocaleString()}\n\n`;
     flagged.forEach((item, i) => {
       txt += `[${i + 1}] TIME: ${formatTime(item.start)} - ${formatTime(item.end)}\n`;
+      txt += `REVISION: ${item.isRevision ? 'YES' : 'NO'}\n`;
       txt += `ISSUE: ${item.errorType}\n`;
       txt += `TEXT: "${item.text}"\n`;
       txt += `NOTE: ${item.note || 'None'}\n\n`;
@@ -2135,17 +2311,11 @@
 
   document.getElementById('btnExportCsv').addEventListener('click', () => {
     persistSessionLocal();
-    const csvContent = buildCsvString();
-    if (!segments.some(s => s.flagged)) return alert('No errors currently flagged for this chapter.');
+    const headers = ['File', 'Cue #', 'Time Start', 'Time End', 'Revision', 'Issue Type', 'Script Phrase', 'Reviewer Note'];
+    const rows = generateCsvFromSegments(segments, currentTrackTitle);
+    if (!rows.length) return alert('No errors or revisions currently marked for this chapter.');
+    const csvContent = [headers.join(','), ...rows].join('\n');
     downloadBlob(csvContent, `${currentTrackTitle.replace(/\s+/g, '_')}_retakes.csv`, 'text/csv;charset=utf-8');
-  });
-
-  document.getElementById('btnExportAllCsv').addEventListener('click', () => {
-    persistSessionLocal();
-    const csvContent = buildAllTracksCsvString();
-    const rowsCount = csvContent.split('\n').filter(Boolean).length;
-    if (rowsCount <= 1) return alert('No errors currently flagged in any chapter.');
-    downloadBlob(csvContent, `Master_Project_Retake_Sheet.csv`, 'text/csv;charset=utf-8');
   });
 
   // Entry Point
