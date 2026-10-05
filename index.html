@@ -758,7 +758,7 @@
       gap: 14px;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
-    .modal-box.admin-mode { max-width: 720px; }
+    .modal-box.admin-mode { max-width: 740px; max-height: 90vh; overflow-y: auto; }
     .modal-box h3 { margin: 0; font-size: 1.2rem; color: #fff; }
     .modal-box p { margin: 0; font-size: 0.85rem; color: var(--muted); }
     .modal-box input[type="password"], .modal-box input[type="text"], .modal-box textarea {
@@ -776,7 +776,7 @@
       font-size: 0.82rem;
       line-height: 1.5;
       resize: vertical;
-      min-height: 140px;
+      min-height: 120px;
       white-space: pre;
     }
     .modal-box input:focus, .modal-box textarea:focus { border-color: var(--accent); }
@@ -855,13 +855,28 @@
 <div id="adminModal" class="overlay-backdrop" style="display:none;">
   <div class="modal-box admin-mode">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Settings & Sync Configuration</h3>
+      <h3 style="display:flex; gap:8px; align-items:center;">⚙️ Secret Admin: Settings & Integrations</h3>
       <button class="btn-secondary" id="btnCloseAdmin" style="padding:4px 8px;">✕</button>
     </div>
 
-    <!-- Sync Configuration -->
+    <!-- Dropbox Shared Folder Auto-Scanner -->
     <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; display:flex; flex-direction:column; gap:8px;">
-      <span style="font-size: 0.8rem; font-weight: 800; color: #6ee7b7; letter-spacing: 0.05em;">MASTER CSV AUTO-SYNC SETTINGS</span>
+      <span style="font-size: 0.8rem; font-weight: 800; color: var(--accent); letter-spacing: 0.05em;">📦 SCAN DROPBOX SHARED FOLDER</span>
+      
+      <label style="font-size:0.75rem; color:var(--muted); display:block;">Dropbox Access Token (from App Console with files.metadata.read):</label>
+      <input type="password" id="adminDropboxToken" placeholder="sl.u.xxxxxxxxxxxxxxxxxxxx" style="width: 100%;">
+
+      <label style="font-size:0.75rem; color:var(--muted); display:block;">Dropbox Shared Folder URL:</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="adminDropboxFolderUrl" placeholder="https://www.dropbox.com/scl/fo/... or https://www.dropbox.com/sh/..." style="flex:1;">
+        <button class="btn-xs btn-save-instant" id="btnScanDropboxFolder" style="padding:0 12px;">🔍 Scan & Import Folder</button>
+      </div>
+      <div id="dropboxScanStatus" style="font-size:0.72rem; font-family:monospace; color:var(--muted);"></div>
+    </div>
+
+    <!-- GitHub CSV Sync Configuration -->
+    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; display:flex; flex-direction:column; gap:8px;">
+      <span style="font-size: 0.8rem; font-weight: 800; color: #6ee7b7; letter-spacing: 0.05em;">🐙 MASTER CSV AUTO-SYNC SETTINGS</span>
       
       <div class="admin-grid-2col">
         <div>
@@ -886,8 +901,8 @@
     </div>
 
     <div style="display:flex; flex-direction:column; gap:6px;">
-      <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Dropbox Tracks & Transcripts:</label>
-      <textarea id="adminTrackInput" spellcheck="false" placeholder="Paste Dropbox links directly (one per line)..."></textarea>
+      <label style="font-size:0.85rem; font-weight:600; color:var(--accent);">Dropbox Tracks & Transcripts (Manual / Scanned list):</label>
+      <textarea id="adminTrackInput" spellcheck="false" placeholder="Paste direct links or populate automatically using the folder scanner above..."></textarea>
     </div>
 
     <div style="display:flex; gap:10px; justify-content: space-between; align-items:center;">
@@ -1110,6 +1125,11 @@
   const adminGhPath = document.getElementById('adminGhPath');
   const adminGhToken = document.getElementById('adminGhToken');
 
+  const adminDropboxToken = document.getElementById('adminDropboxToken');
+  const adminDropboxFolderUrl = document.getElementById('adminDropboxFolderUrl');
+  const btnScanDropboxFolder = document.getElementById('btnScanDropboxFolder');
+  const dropboxScanStatus = document.getElementById('dropboxScanStatus');
+
   function isAdminRemembered() {
     return localStorage.getItem(getScopedKey('qc_admin_remembered')) === 'true';
   }
@@ -1203,10 +1223,14 @@
 
   function openAdminPanel() {
     adminClientPassSetting.value = getClientPassword();
-    adminTrackInput.value = TRACKS.map(t => t.audio).join('\n\n');
+    adminTrackInput.value = TRACKS.map(t => `${t.title} | ${t.audio} | ${t.vtt}`).join('\n');
     adminGhRepo.value = localStorage.getItem(getScopedKey('qc_gh_repo')) || '';
     adminGhPath.value = localStorage.getItem(getScopedKey('qc_gh_path')) || 'Master_Retake_Sheet.csv';
     adminGhToken.value = localStorage.getItem(getScopedKey('qc_gh_token')) || '';
+
+    adminDropboxToken.value = localStorage.getItem(getScopedKey('qc_dbx_token')) || '';
+    adminDropboxFolderUrl.value = localStorage.getItem(getScopedKey('qc_dbx_folder_url')) || '';
+    dropboxScanStatus.textContent = '';
     adminModal.style.display = 'flex';
   }
 
@@ -1223,6 +1247,9 @@
     localStorage.setItem(getScopedKey('qc_gh_repo'), adminGhRepo.value.trim());
     localStorage.setItem(getScopedKey('qc_gh_path'), adminGhPath.value.trim());
     localStorage.setItem(getScopedKey('qc_gh_token'), adminGhToken.value.trim());
+
+    localStorage.setItem(getScopedKey('qc_dbx_token'), adminDropboxToken.value.trim());
+    localStorage.setItem(getScopedKey('qc_dbx_folder_url'), adminDropboxFolderUrl.value.trim());
 
     const rawLines = adminTrackInput.value.trim().split('\n').map(l => l.trim()).filter(Boolean);
     const newTracks = [];
@@ -1253,6 +1280,99 @@
     alert(`Settings saved successfully!`);
     renderTrackGrid();
     loadTrack(0);
+  });
+
+  // ==========================================================
+  // DROPBOX SHARED FOLDER AUTO-SCANNER ENGINE
+  // ==========================================================
+  btnScanDropboxFolder.addEventListener('click', async () => {
+    const token = adminDropboxToken.value.trim();
+    const folderUrl = adminDropboxFolderUrl.value.trim();
+
+    if (!token) {
+      alert("Please provide a Dropbox Access Token with files.metadata.read permission.");
+      return;
+    }
+    if (!folderUrl) {
+      alert("Please enter a Dropbox shared folder link.");
+      return;
+    }
+
+    dropboxScanStatus.style.color = "var(--accent)";
+    dropboxScanStatus.textContent = "Scanning Dropbox folder via API...";
+    btnScanDropboxFolder.disabled = true;
+
+    try {
+      const response = await fetch("https://api.dropboxapi.com/2/files/list_folder", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          path: "",
+          shared_link: { url: folderUrl }
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error_summary || "Could not list Dropbox folder");
+      }
+
+      const data = await response.json();
+      const entries = data.entries || [];
+
+      // Filter audio files & vtt files
+      const audioRegex = /\.(mp3|wav|m4a|aac|flac|ogg)$/i;
+      const audioFiles = entries.filter(e => e['.tag'] === 'file' && audioRegex.test(e.name));
+      const vttFiles = entries.filter(e => e['.tag'] === 'file' && /\.vtt$/i.test(e.name));
+
+      if (audioFiles.length === 0) {
+        dropboxScanStatus.style.color = "var(--danger)";
+        dropboxScanStatus.textContent = "No audio files (.mp3, .wav, .m4a) found in this folder.";
+        btnScanDropboxFolder.disabled = false;
+        return;
+      }
+
+      // Natural numeric sort (e.g. Chapter 1, Chapter 2, Chapter 10)
+      audioFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+
+      // Clean the shared folder base URL to construct direct file links
+      const cleanBaseFolderUrl = folderUrl.split('?')[0].replace(/\/+$/, '');
+      const urlObj = new URL(folderUrl);
+      const rlkey = urlObj.searchParams.get('rlkey');
+
+      const parsedTracks = [];
+      audioFiles.forEach((file) => {
+        const baseName = file.name.replace(audioRegex, '');
+        const title = baseName.replace(/[-_]/g, ' ');
+
+        // Check for matching VTT file
+        const matchingVtt = vttFiles.find(v => v.name.replace(/\.vtt$/i, '').toLowerCase() === baseName.toLowerCase());
+        const vttName = matchingVtt ? matchingVtt.name : `${baseName}.vtt`;
+
+        // Direct streaming URL from Dropbox shared folder
+        let directAudioUrl = `${cleanBaseFolderUrl}/${encodeURIComponent(file.name)}?raw=1`;
+        if (rlkey) directAudioUrl += `&rlkey=${rlkey}`;
+
+        parsedTracks.push({
+          title,
+          audio: directAudioUrl,
+          vtt: vttName
+        });
+      });
+
+      adminTrackInput.value = parsedTracks.map(t => `${t.title} | ${t.audio} | ${t.vtt}`).join('\n');
+      dropboxScanStatus.style.color = "var(--success)";
+      dropboxScanStatus.textContent = `Found ${parsedTracks.length} audio tracks and mapped VTT files! Click 'Save & Apply' to commit.`;
+    } catch (err) {
+      console.error(err);
+      dropboxScanStatus.style.color = "var(--danger)";
+      dropboxScanStatus.textContent = `Error: ${err.message}`;
+    } finally {
+      btnScanDropboxFolder.disabled = false;
+    }
   });
 
   btnResetDefault.addEventListener('click', () => {
@@ -1681,7 +1801,6 @@
       for (let j = 0; j < step; j++) {
         const idx = chunkStart + j;
         if (idx >= channelData.length) break;
-        const val = chunkStart + j;
         const sVal = channelData[idx];
         if (sVal < min) min = sVal;
         if (sVal > max) max = sVal;
@@ -1941,7 +2060,6 @@
         </button>
       ` : '';
 
-      // Reviewer gets non-editable text; Admin gets editable textarea for script phrase
       const scriptBodyHtml = isAdminSession ? `
         <textarea class="seg-text-input" data-idx="${idx}">${seg.text}</textarea>
       ` : `
