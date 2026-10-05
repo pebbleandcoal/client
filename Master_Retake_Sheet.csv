@@ -1,0 +1,5 @@
+File,Cue #,Time Start,Time End,Issue Type,Script Phrase,Reviewer Note,Revision
+"Chapter 1",4,"00:25","00:27","Unnatural Pause / Cadence","[Medium pause] [Thoughtful] He smells the fabric.","4; Stumbled on word","jj"
+"Chapter 1",7,"00:32","00:38","Mispronunciation","[Slow pace] Pipkin walks in, [Short pause] and says hello to Rusty.","[Slow pace] ","[Slow pace] removed"
+"Chapter 2",1,"00:00","00:02","Dropped / Skipped Word","[Slow pace] [Thoughtful] Rusty opens his eyes.","","2"
+"Chapter 2",7,"00:32","00:38","Mispronunciation","[Slow pace] Pipkin walks in, [Short pause] and says hello to Rusty.","","3"
